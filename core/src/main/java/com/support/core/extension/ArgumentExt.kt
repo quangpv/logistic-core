@@ -35,3 +35,9 @@ fun <T : Serializable> FragmentActivity.sArgs(key: String): Lazy<T> =
     lazy(LazyThreadSafetyMode.NONE) {
         intent.getSerializableExtra(key) as? T ?: error("Can not cast $key")
     }
+
+@Suppress("UNCHECKED_CAST")
+fun <T : Serializable> FragmentActivity.sNullableArgs(key: String): Lazy<T?> =
+    lazy(LazyThreadSafetyMode.NONE) {
+        intent.getSerializableExtra(key) as? T
+    }

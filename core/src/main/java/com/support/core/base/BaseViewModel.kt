@@ -10,8 +10,10 @@ import com.support.core.event.LoadingEvent
 import com.support.core.event.SingleLiveEvent
 import com.support.core.extension.LoadCacheLiveData
 import com.support.core.extension.doAsync
+import com.support.core.extension.post
 import com.support.core.factory.ViewModelFactory
 import com.support.core.functional.Form
+import com.support.core.isOnMainThread
 
 abstract class BaseViewModel : ViewModel() {
 
@@ -72,7 +74,7 @@ abstract class BaseViewModel : ViewModel() {
         errorEvent: SingleLiveEvent<Throwable>? = error,
         function: ConcurrentScope.() -> Unit
     ) {
-        loadingEvent?.value = true
+        loadingEvent?.post(true)
 
         mConcurrent.launch {
             try {
@@ -86,8 +88,12 @@ abstract class BaseViewModel : ViewModel() {
         }
     }
 
-    fun diskIO(function: () -> Unit) {
-        AppExecutors.diskIO.execute(function)
+    fun diskIO(force: Boolean = true, function: () -> Unit) {
+        if (force) AppExecutors.diskIO.execute(function)
+        else {
+            if (isOnMainThread) AppExecutors.diskIO.execute(function)
+            else function()
+        }
     }
 
     fun <T> LiveData<T>.validate(function: (T) -> Unit): LiveData<T> {
@@ -112,6 +118,17 @@ abstract class BaseViewModel : ViewModel() {
             this
         }
     }
+
+    fun validate(function: () -> Unit): Any? {
+        return try {
+            function()
+            this
+        } catch (t: Throwable) {
+            error.value = t
+            null
+        }
+    }
+
 }
 
 inline fun <reified T : ViewModel> AppCompatActivity.viewModel(): Lazy<T> =

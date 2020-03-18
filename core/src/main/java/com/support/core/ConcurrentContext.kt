@@ -4,6 +4,8 @@ import android.os.Looper
 import java.util.concurrent.Callable
 import java.util.concurrent.CancellationException
 import java.util.concurrent.ExecutionException
+import java.util.concurrent.locks.ReentrantLock
+import kotlin.concurrent.withLock
 
 private val networkIO get() = AppExecutors.concurrentIO
 private val launchIO get() = AppExecutors.networkIO
@@ -56,6 +58,47 @@ class ConcurrentScope {
     fun <T> ConcurrentExecutable<T>.await(): T {
         return execute(this@ConcurrentScope)
     }
+}
+
+class ConcurrentContinue<T>(private val lock: ReentrantLock) {
+    private var mDone: Boolean = false
+    private var mResult: Any? = null
+    private val mCondition = lock.newCondition()
+
+    fun success(result: T) {
+        lock.withLock {
+            mResult = result
+            mDone = true
+            mCondition.signal()
+        }
+    }
+
+    fun error(exception: Throwable) {
+        lock.withLock {
+            mDone = true
+            mResult = exception
+            mCondition.signal()
+        }
+    }
+
+    fun await(): T {
+        if (mDone) return handleResult()
+        lock.withLock { mCondition.await() }
+        return handleResult()
+    }
+
+    @Suppress("unchecked_cast")
+    private fun handleResult(): T {
+        val result = mResult
+        if (result is Throwable) throw result
+        return result as T
+    }
+}
+
+fun <T> continuation(lock: ReentrantLock = ReentrantLock(), function: (ConcurrentContinue<T>) -> Unit): T {
+    val con = ConcurrentContinue<T>(lock)
+    function(con)
+    return con.await()
 }
 
 fun <T> concurrentScope(function: ConcurrentScope. () -> T): ConcurrentExecutable<T> {

@@ -4,9 +4,11 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.annotation.LayoutRes
+import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.Observer
 import androidx.recyclerview.widget.RecyclerView
 import com.support.core.event.asObservable
+import com.support.core.functional.LifecycleDestroyObserver
 import kotlinx.android.extensions.LayoutContainer
 
 abstract class RecyclerAdapter<T> : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
@@ -27,6 +29,12 @@ abstract class RecyclerAdapter<T> : RecyclerView.Adapter<RecyclerView.ViewHolder
         (holder as? IHolder<T>)?.bind(mItems!![position])
     }
 
+    @Suppress("unchecked_cast")
+    override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int, payloads: MutableList<Any>) {
+        if (!payloads.isNullOrEmpty()) (holder as? IHolder<T>)?.onChangedWith(payloads)
+        else super.onBindViewHolder(holder, position, payloads)
+    }
+
     override fun onViewRecycled(holder: RecyclerView.ViewHolder) {
         super.onViewRecycled(holder)
         (holder as? IHolder<*>)?.onRecycled()
@@ -37,6 +45,8 @@ abstract class RecyclerAdapter<T> : RecyclerView.Adapter<RecyclerView.ViewHolder
 interface IHolder<T> {
     fun bind(item: T)
     fun onRecycled() {}
+    fun onChangedWith(payload: Any? = null) {
+    }
 }
 
 open class RecyclerHolder<T>(itemView: View) : RecyclerView.ViewHolder(itemView), IHolder<T>,
@@ -53,6 +63,12 @@ open class RecyclerHolder<T>(itemView: View) : RecyclerView.ViewHolder(itemView)
     override val containerView: View?
         get() = itemView
     protected var item: T? = null
+
+    fun subscribe(owner: LifecycleOwner) {
+        owner.lifecycle.addObserver(LifecycleDestroyObserver {
+            onRecycled()
+        })
+    }
 
     override fun bind(item: T) {
         item.asObservable()?.also {

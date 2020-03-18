@@ -11,6 +11,8 @@ import java.util.*
 import kotlin.reflect.KClass
 
 abstract class Navigator(private val fragmentManager: FragmentManager, @IdRes val container: Int) {
+    abstract val lastDestination: Destination?
+    var onNavigateChangedListener: (KClass<*>) -> Unit = {}
     private val mTransactionManager = TransactionManager()
 
     abstract fun navigate(
@@ -25,7 +27,7 @@ abstract class Navigator(private val fragmentManager: FragmentManager, @IdRes va
 
     open fun onRestoreInstance(saved: Bundle) {}
 
-    fun transaction(function: FragmentTransaction. () -> Unit) {
+    protected fun transaction(function: FragmentTransaction. () -> Unit) {
         mTransactionManager.push(Transaction(function))
     }
 

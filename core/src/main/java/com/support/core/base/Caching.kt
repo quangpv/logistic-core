@@ -9,6 +9,7 @@ import kotlin.reflect.KProperty
 
 abstract class Caching(context: Context, private val parser: Parser) {
     private val mShared = context.getSharedPreferences("logistics:cache", Context.MODE_PRIVATE)
+    open fun clear(){}
 
     fun <T> reference(key: String) = object : CacheProperty<T?> {
         @Suppress("unchecked_cast")

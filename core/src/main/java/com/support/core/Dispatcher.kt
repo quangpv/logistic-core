@@ -9,6 +9,10 @@ import androidx.fragment.app.FragmentActivity
 
 interface Dispatcher
 
+fun Dispatcher.asResult(): ResultLifecycle {
+    return (this as ResultOwner).resultLife
+}
+
 inline fun <reified T : FragmentActivity> Dispatcher.open(
     args: Bundle? = null,
     edit: Intent.() -> Unit = {}
@@ -26,10 +30,38 @@ inline fun <reified T : FragmentActivity> Dispatcher.open(
     return this
 }
 
+inline fun <reified T : FragmentActivity> Dispatcher.openForResult(args: Bundle? = null): Dispatcher {
+    when (this) {
+        is AppCompatActivity -> startActivityForResult(Intent(this, T::class.java)
+                .putArgs(args), REQUEST_FOR_RESULT_INSTANTLY)
+        is Fragment -> startActivityForResult(Intent(requireContext(), T::class.java)
+                .putArgs(args), REQUEST_FOR_RESULT_INSTANTLY)
+    }
+    return this
+}
+
+fun Intent.putArgs(args: Bundle?): Intent {
+    args ?: return this
+    putExtras(args)
+    return this
+}
+
 fun Dispatcher.close() {
     when (this) {
         is AppCompatActivity -> finish()
         is Fragment -> requireActivity().finish()
+    }
+}
+
+fun Dispatcher.close(code: Int, data: Bundle? = null) {
+    fun FragmentActivity.doClose() {
+        if (data != null) setResult(code, Intent().apply { putExtras(data) })
+        else setResult(code)
+        finish()
+    }
+    when (this) {
+        is AppCompatActivity -> doClose()
+        is Fragment -> requireActivity().doClose()
     }
 }
 

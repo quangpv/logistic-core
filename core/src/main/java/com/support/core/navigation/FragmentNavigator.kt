@@ -15,6 +15,8 @@ class FragmentNavigator(
 
     private val mStack = DestinationStack()
 
+    override val lastDestination: Destination? get() = mStack.last
+
     private val Destination.requireFragment: Fragment
         get() = fragment ?: error("Not found requireFragment $tag")
 
@@ -52,6 +54,7 @@ class FragmentNavigator(
             fragmentRemoves.forEach { remove(it) }
             if (fragment.isAdded) show(fragment)
             else add(container, fragment, destination.tag)
+            onNavigateChangedListener(kClass)
             Log.i("Stack", mStack.toString())
         }
     }
@@ -121,7 +124,11 @@ class FragmentNavigator(
             if (current.keepInstance) hide(currentFragment)
             else remove(currentFragment)
 
-            if (previous != null) show(previous.requireFragment)
+            if (previous != null) {
+                val fragment=previous.requireFragment
+                show(fragment)
+                onNavigateChangedListener(fragment.javaClass.kotlin)
+            }
         }
         Log.i("Stack", mStack.toString())
         return previous != null
