@@ -7,7 +7,7 @@ interface ResultOwner {
     val resultLife: ResultLifecycle
 }
 
-const val REQUEST_FOR_RESULT_INSTANTLY = 1000000
+const val REQUEST_FOR_RESULT_INSTANTLY = 17491
 
 interface ResultLifecycle {
     fun onActivityResult(requestCode: Int = REQUEST_FOR_RESULT_INSTANTLY, callback: (resultCode: Int, data: Intent?) -> Unit)

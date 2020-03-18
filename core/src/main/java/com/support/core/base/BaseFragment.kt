@@ -1,5 +1,6 @@
 package com.support.core.base
 
+import android.content.Intent
 import android.os.Bundle
 import android.util.Log
 import android.view.View
@@ -7,11 +8,16 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.LifecycleRegistry
+import com.support.core.ResultLifecycle
+import com.support.core.ResultOwner
+import com.support.core.ResultRegistry
 
-abstract class BaseFragment(contentLayoutId: Int) : Fragment(contentLayoutId) {
-    val visibleOwner by lazy(LazyThreadSafetyMode.NONE) { VisibleLifecycleOwner(this) }
-
+abstract class BaseFragment(contentLayoutId: Int) : Fragment(contentLayoutId), ResultOwner {
+    private val mResultRegistry = ResultRegistry()
     private val visibleRegistry get() = visibleOwner.lifecycle as VisibleLifecycleRegistry
+
+    val visibleOwner by lazy(LazyThreadSafetyMode.NONE) { VisibleLifecycleOwner(this) }
+    override val resultLife: ResultLifecycle get() = mResultRegistry
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
@@ -45,6 +51,20 @@ abstract class BaseFragment(contentLayoutId: Int) : Fragment(contentLayoutId) {
 
     override fun onHiddenChanged(hidden: Boolean) {
         visibleRegistry.hide(hidden)
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        mResultRegistry.handleActivityResult(requestCode, resultCode, data)
+    }
+
+    override fun onRequestPermissionsResult(
+            requestCode: Int,
+            permissions: Array<out String>,
+            grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        mResultRegistry.handlePermissionsResult(requestCode, permissions, grantResults)
     }
 
 }
