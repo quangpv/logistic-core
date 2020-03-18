@@ -2,26 +2,16 @@ package com.support.core.base
 
 import android.os.Bundle
 import android.util.Log
-import android.view.LayoutInflater
 import android.view.View
-import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.LifecycleRegistry
 
-abstract class BaseFragment(private val contentLayoutId: Int) : Fragment() {
+abstract class BaseFragment(contentLayoutId: Int) : Fragment(contentLayoutId) {
     val visibleOwner by lazy(LazyThreadSafetyMode.NONE) { VisibleLifecycleOwner(this) }
 
     private val visibleRegistry get() = visibleOwner.lifecycle as VisibleLifecycleRegistry
-
-    override fun onCreateView(
-        inflater: LayoutInflater,
-        container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View? {
-        return inflater.inflate(contentLayoutId, container, false)
-    }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)

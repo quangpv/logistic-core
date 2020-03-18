@@ -110,15 +110,12 @@ fun Fragment.findNavigator(@IdRes containerId: Int = 0): Navigator {
         if (containerId == 0) return this.navigator
         else if (containerId == this.navigator.container) return this.navigator
     }
-    var navigator: Navigator?
 
-    if (containerId == 0) {
-        navigator = childFragmentManager.fragments.find { it is NavHostFragment }?.findNavigator()
+    if (containerId != 0) {
+        val navigator =
+            (childFragmentManager.findFragmentById(containerId) as? NavHostFragment)?.navigator
         if (navigator != null) return navigator
     }
-
-    navigator = (childFragmentManager.findFragmentById(containerId) as? NavHostFragment)?.navigator
-    if (navigator != null) return navigator
 
     if (parentFragment == null) {
         val activity = this.activity

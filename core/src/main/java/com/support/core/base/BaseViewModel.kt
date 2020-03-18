@@ -96,6 +96,14 @@ abstract class BaseViewModel : ViewModel() {
         }
     }
 
+    fun networkIO(force: Boolean = true, function: () -> Unit) {
+        if (force) AppExecutors.networkIO.execute(function)
+        else {
+            if (isOnMainThread) AppExecutors.networkIO.execute(function)
+            else function()
+        }
+    }
+
     fun <T> LiveData<T>.validate(function: (T) -> Unit): LiveData<T> {
         val next = MediatorLiveData<T>()
         next.addSource(this) {
