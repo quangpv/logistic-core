@@ -4,29 +4,30 @@ import android.content.Context
 import android.content.SharedPreferences
 import com.support.core.functional.Parser
 import kotlin.properties.ReadWriteProperty
-import kotlin.reflect.KClass
 import kotlin.reflect.KProperty
 
-abstract class Caching(context: Context, private val parser: Parser) {
+abstract class Caching(context: Context, val parser: Parser) {
     private val mShared = context.getSharedPreferences("logistics:cache", Context.MODE_PRIVATE)
-    open fun clear(){}
+    val shared: SharedPreferences get() = mShared
 
-    fun <T> reference(key: String) = object : CacheProperty<T?> {
-        @Suppress("unchecked_cast")
-        private val KProperty<*>.type: Class<T>
-            get() = (returnType.classifier as KClass<*>).javaObjectType as Class<T>
+    open fun clear() {}
+
+    inline fun <reified T> reference(key: String) = object : CacheProperty<T?> {
+//        @Suppress("unchecked_cast")
+//        private val KProperty<*>.type: Class<T>
+//            get() = (returnType.classifier as KClass<*>).javaObjectType as Class<T>
 
         private var mValue: T? = null
 
         override fun getValue(thisRef: Caching, property: KProperty<*>): T? {
             if (mValue == null) mValue =
-                parser.fromJson(thisRef.mShared.getString(key, ""), property.type)
+                parser.fromJson(thisRef.shared.getString(key, ""), T::class.java)
             return mValue
         }
 
         override fun setValue(thisRef: Caching, property: KProperty<*>, value: T?) {
             mValue = value
-            thisRef.mShared.edit().putString(key, parser.toJson(value)).apply()
+            thisRef.shared.edit().putString(key, parser.toJson(value)).apply()
         }
     }
 

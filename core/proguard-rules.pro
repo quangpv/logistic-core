@@ -19,3 +19,12 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+
+
+-keepclassmembers @com.support.core.Inject public class * {
+ public <init>(...);
+}
+
+-keepclassmembers class * extends androidx.lifecycle.ViewModel{
+ public <init>(...);
+}
