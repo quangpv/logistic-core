@@ -19,6 +19,18 @@ class LocalEvent<T> : Event<T> {
         synchronized(mObservers) { mObservers.add(ObserverWrapper(owner, function)) }
     }
 
+    fun observeNotNull(owner: LifecycleOwner, function: (T) -> Unit) {
+        observe(owner) {
+            it?.also(function)
+        }
+    }
+
+    fun observeForeverNotNull(function: (T) -> Unit) {
+        observeForever {
+            it?.also(function)
+        }
+    }
+
     private fun notifyChange() = synchronized(mObservers) {
         mObservers.forEach { it.notifyChange() }
     }
@@ -44,8 +56,8 @@ class LocalEvent<T> : Event<T> {
     }
 
     private inner class ObserverWrapper(
-        private val owner: LifecycleOwner,
-        private val function: (T?) -> Unit
+            private val owner: LifecycleOwner,
+            private val function: (T?) -> Unit
     ) : IObserver {
 
         private var shouldNotify: Boolean = false

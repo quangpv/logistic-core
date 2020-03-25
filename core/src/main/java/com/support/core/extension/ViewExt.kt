@@ -32,6 +32,7 @@ fun View.setMarginTop(@DimenRes dimen: Int) {
 }
 
 fun ViewGroup.setContentView(id: Int) {
+    removeAllViews()
     LayoutInflater.from(context).inflate(id, this, true)
 }
 
