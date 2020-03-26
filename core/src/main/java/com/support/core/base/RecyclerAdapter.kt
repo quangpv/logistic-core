@@ -3,6 +3,7 @@ package com.support.core.base
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.annotation.CallSuper
 import androidx.annotation.LayoutRes
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.Observer
@@ -50,12 +51,12 @@ interface IHolder<T> {
 }
 
 open class RecyclerHolder<T>(itemView: View) : RecyclerView.ViewHolder(itemView), IHolder<T>,
-    LayoutContainer, Observer<T> {
+        LayoutContainer, Observer<T> {
     private var parent: ViewGroup? = null
 
     constructor(parent: ViewGroup, @LayoutRes layoutId: Int) : this(
-        LayoutInflater.from(parent.context)
-            .inflate(layoutId, parent, false)
+            LayoutInflater.from(parent.context)
+                    .inflate(layoutId, parent, false)
     ) {
         this.parent = parent
     }
@@ -70,6 +71,7 @@ open class RecyclerHolder<T>(itemView: View) : RecyclerView.ViewHolder(itemView)
         })
     }
 
+    @CallSuper
     override fun bind(item: T) {
         item.asObservable()?.also {
             val old = this@RecyclerHolder.item
