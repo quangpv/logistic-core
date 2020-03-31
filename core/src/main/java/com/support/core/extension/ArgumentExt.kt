@@ -25,13 +25,13 @@ fun Serializable.toBundle(key: String): Bundle {
 }
 
 
-fun <T : Parcelable> FragmentActivity.args(key: String): Lazy<T> =
+fun <T : Parcelable> FragmentActivity.args(key: String) =
     lazy(LazyThreadSafetyMode.NONE) {
         intent.getParcelableExtra(key) as? T ?: error("Can not cast $key")
     }
 
 @Suppress("UNCHECKED_CAST")
-fun <T : Serializable> FragmentActivity.sArgs(key: String): Lazy<T> =
+fun <T : Serializable> FragmentActivity.sArgs(key: String) =
     lazy(LazyThreadSafetyMode.NONE) {
         intent.getSerializableExtra(key) as? T ?: error("Can not cast $key")
     }

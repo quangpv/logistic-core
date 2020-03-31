@@ -8,6 +8,7 @@ import android.text.method.LinkMovementMethod
 import android.text.style.CharacterStyle
 import android.text.style.ClickableSpan
 import android.util.AttributeSet
+import android.util.DisplayMetrics
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -42,9 +43,9 @@ fun TextView.format(vararg format: Any): String {
 }
 
 fun TextView.addSpan(
-    spanValue: String,
-    spanned: CharacterStyle,
-    textValue: String = text.toString()
+        spanValue: String,
+        spanned: CharacterStyle,
+        textValue: String = text.toString()
 ) {
     val span = SpannableString(textValue)
     val start = span.indexOf(spanValue)
@@ -62,10 +63,10 @@ fun ViewGroup.inflate(id: Int): View {
 }
 
 fun Context.with(
-    attrs: AttributeSet?,
-    type: IntArray,
-    defStyleAttr: Int,
-    function: (TypedArray) -> Unit
+        attrs: AttributeSet?,
+        type: IntArray,
+        defStyleAttr: Int,
+        function: (TypedArray) -> Unit
 ) {
     if (attrs != null) {
         val typed = obtainStyledAttributes(attrs, type, defStyleAttr, 0)
@@ -90,6 +91,13 @@ infix fun Boolean.show(views: List<View>) {
     views.forEach { this show it }
 }
 
+fun View.show(b: Boolean, function: () -> Unit) {
+    visibility = if (b) {
+        function()
+        View.VISIBLE
+    } else View.GONE
+}
+
 infix fun Boolean.invisible(view: View) {
     view.visibility = if (this) View.INVISIBLE else View.VISIBLE
 }
@@ -104,4 +112,12 @@ fun View.gone() {
 
 fun View.show() {
     visibility = View.VISIBLE
+}
+
+fun Context.toPx(dp: Float): Int {
+    return (dp * (resources.displayMetrics.densityDpi.toFloat() / DisplayMetrics.DENSITY_DEFAULT)).toInt()
+}
+
+fun Context.toDp(px: Int): Float {
+    return px / (resources.displayMetrics.densityDpi.toFloat() / DisplayMetrics.DENSITY_DEFAULT)
 }

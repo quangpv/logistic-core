@@ -13,49 +13,69 @@ class OnForegroundListener(private val function: (isCreate: Boolean) -> Unit) :
     override fun onForeground() {
         function(true)
     }
+
+    override fun onStart() {
+
+    }
+
+    override fun onStop() {
+
+    }
 }
 
 abstract class OnAppRunningListener :
     Application.ActivityLifecycleCallbacks {
+    private var numOfForeground = 0
     private var numOfStart = 0
     private var isConfigChanging = false
+    private var isStartConfigChanging = false
+
+    override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {
+        numOfForeground++
+        if (numOfForeground == 1 && !isConfigChanging) {
+            onForeground()
+        }
+    }
+
+    override fun onActivityDestroyed(activity: Activity) {
+        isConfigChanging = activity.isChangingConfigurations
+        numOfForeground -= 1
+        if (numOfForeground == 0 && !isConfigChanging) {
+            onBackground()
+        }
+    }
+
+    override fun onActivityStarted(activity: Activity) {
+        numOfStart++
+        if (numOfStart == 1 && !isStartConfigChanging) {
+            onStart()
+        }
+    }
+
+    override fun onActivityStopped(activity: Activity) {
+        isStartConfigChanging = activity.isChangingConfigurations
+        numOfStart -= 1
+        if (numOfStart == 0 && !isStartConfigChanging) {
+            onStop()
+        }
+    }
+
+    override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle) {
+    }
+
+    override fun onActivityResumed(activity: Activity) {
+    }
 
     override fun onActivityPaused(activity: Activity) {
 
     }
 
-    override fun onActivityStarted(activity: Activity) {
-
-    }
-
-    override fun onActivityDestroyed(activity: Activity) {
-        isConfigChanging = activity.isChangingConfigurations
-        numOfStart -= 1
-        if (numOfStart == 0 && !isConfigChanging) {
-            onBackground()
-        }
-    }
-
-
-    override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle) {
-    }
-
-    override fun onActivityStopped(activity: Activity) {
-    }
-
-    override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {
-        numOfStart++
-        if (numOfStart == 1 && !isConfigChanging) {
-            onForeground()
-        }
-    }
+    abstract fun onStart()
+    abstract fun onStop()
 
     abstract fun onBackground()
 
     abstract fun onForeground()
-
-    override fun onActivityResumed(activity: Activity) {
-    }
 
 }
 
@@ -64,10 +84,20 @@ class ForegroundDetector : OnAppRunningListener() {
         foreground = false
     }
 
+    override fun onStart() {
+        start = true
+    }
+
+    override fun onStop() {
+        start = false
+    }
+
     override fun onForeground() {
         foreground = true
     }
 
+    var start: Boolean = false
+        private set
     var foreground: Boolean = false
         private set
 

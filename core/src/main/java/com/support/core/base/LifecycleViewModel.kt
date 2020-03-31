@@ -5,12 +5,11 @@ import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.LifecycleRegistry
 
 abstract class LifecycleViewModel : BaseViewModel(), LifecycleOwner {
+    private var mRegistry = LifecycleRegistry(this)
+
     override fun getLifecycle(): Lifecycle = mRegistry
 
-    @Suppress("LeakingThis")
-    private val mRegistry = LifecycleRegistry(this)
-
-    init {
+    override fun onCreate() {
         mRegistry.handleLifecycleEvent(Lifecycle.Event.ON_CREATE)
         mRegistry.handleLifecycleEvent(Lifecycle.Event.ON_START)
     }
