@@ -7,6 +7,7 @@ import android.graphics.Paint
 import android.graphics.Rect
 import android.util.AttributeSet
 import android.view.View
+import com.support.core.extension.toPx
 import kotlin.math.max
 import kotlin.math.sqrt
 
@@ -14,7 +15,7 @@ class TagTextView @JvmOverloads constructor(
         context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0
 ) : View(context, attrs, defStyleAttr) {
     private val textPaint = Paint().apply {
-        textSize = 25f
+        textSize = context.toPx(9f).toFloat()
         color = Color.WHITE
         isAntiAlias = true
     }
