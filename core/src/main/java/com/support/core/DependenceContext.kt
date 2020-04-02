@@ -7,7 +7,7 @@ import androidx.lifecycle.ViewModel
 @Target(AnnotationTarget.CLASS)
 @Retention(AnnotationRetention.RUNTIME)
 annotation class Inject(
-        val singleton: Boolean = false
+    val singleton: Boolean = false
 )
 
 interface Bean<T> {
@@ -23,16 +23,17 @@ interface Scope {
 }
 
 private open class SimpleBean<T>(
-        val isSingleton: Boolean,
-        val function: () -> T
+    val isSingleton: Boolean,
+    val function: () -> T
 ) : Bean<T> {
     private var mValue: T? = null
 
     override val value: T
         get() {
             return if (isSingleton) {
-                if (mValue == null)
-                    mValue = function()
+                if (mValue == null) synchronized(this) {
+                    if (mValue == null) mValue = function()
+                }
                 mValue!!
             } else function()
         }
@@ -159,7 +160,7 @@ class DependenceContext : ProvideContext() {
     fun <T> lookup(clazz: Class<T>): Bean<T> {
         if (!mBean.containsKey(clazz)) {
             if (clazz.isAssignableFrom(Application::class.java)
-                    || clazz.isAssignableFrom(Context::class.java)
+                || clazz.isAssignableFrom(Context::class.java)
             ) return mApplication as Bean<T>
             reflectProvideIfNeeded(clazz)
         }
@@ -174,7 +175,7 @@ class DependenceContext : ProvideContext() {
 
             else -> {
                 val annotation = clazz.getAnnotation(Inject::class.java)
-                        ?: error("Not found ${clazz.simpleName}")
+                    ?: error("Not found ${clazz.simpleName}")
                 if (annotation.singleton) single(clazz) {
                     create(clazz)
                 } else factory(clazz) {
@@ -196,8 +197,8 @@ class DependenceContext : ProvideContext() {
     @Suppress("unchecked_cast")
     fun <T> create(clazz: Class<T>): T {
         val constructor = clazz.constructors.firstOrNull()
-                ?: clazz.declaredConstructors.firstOrNull()
-                ?: error("Not found constructor for ${clazz.simpleName}")
+            ?: clazz.declaredConstructors.firstOrNull()
+            ?: error("Not found constructor for ${clazz.simpleName}")
 
         val paramTypes = constructor.genericParameterTypes
         return constructor.newInstance(*paramTypes.map { lookup(it as Class<*>).value }.toTypedArray()) as T
