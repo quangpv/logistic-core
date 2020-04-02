@@ -10,5 +10,6 @@ fun Bitmap.toBase64(recycle: Boolean): String {
     compress(Bitmap.CompressFormat.JPEG, 70, byteArrayOutputStream)
     val byteArray: ByteArray = byteArrayOutputStream.toByteArray()
     if (recycle) recycle()
-    return "data:image/jpeg;base64,${Base64.encodeToString(byteArray, Base64.DEFAULT)}"
+//    return "data:image/jpeg;base64,${Base64.encodeToString(byteArray, Base64.DEFAULT)}"
+    return Base64.encodeToString(byteArray, Base64.DEFAULT)
 }
