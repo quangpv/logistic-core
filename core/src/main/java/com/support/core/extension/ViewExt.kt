@@ -32,20 +32,36 @@ fun View.setMarginTop(@DimenRes dimen: Int) {
         resources.getDimensionPixelSize(dimen)
 }
 
+@Suppress("unchecked_cast")
 fun ViewGroup.setContentView(id: Int) {
+    var cache = tag as? HashMap<Int, View>
+    if (cache == null) {
+        cache = hashMapOf()
+        tag = cache
+    }
+    val view = if (cache.containsKey(id)) cache[id] else {
+        LayoutInflater.from(context).inflate(id, this, false).also {
+            cache[id] = it
+        }
+    }
+    if (getChildAt(0) == view) return
     removeAllViews()
-    LayoutInflater.from(context).inflate(id, this, true)
+    addView(view)
 }
 
+fun ViewGroup.of(id: Int, function: ViewGroup.() -> Unit) {
+    setContentView(id)
+    function()
+}
 
 fun TextView.format(vararg format: Any): String {
     return text.toString().format(Locale.getDefault(), *format)
 }
 
 fun TextView.addSpan(
-        spanValue: String,
-        spanned: CharacterStyle,
-        textValue: String = text.toString()
+    spanValue: String,
+    spanned: CharacterStyle,
+    textValue: String = text.toString()
 ) {
     val span = SpannableString(textValue)
     val start = span.indexOf(spanValue)
@@ -63,10 +79,10 @@ fun ViewGroup.inflate(id: Int): View {
 }
 
 fun Context.with(
-        attrs: AttributeSet?,
-        type: IntArray,
-        defStyleAttr: Int,
-        function: (TypedArray) -> Unit
+    attrs: AttributeSet?,
+    type: IntArray,
+    defStyleAttr: Int,
+    function: (TypedArray) -> Unit
 ) {
     if (attrs != null) {
         val typed = obtainStyledAttributes(attrs, type, defStyleAttr, 0)
