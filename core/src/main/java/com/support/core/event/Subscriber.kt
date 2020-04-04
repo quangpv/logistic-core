@@ -4,7 +4,12 @@ import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.Observer
 
-class Subscriber<T> : MutableLiveData<T>() {
+interface PostAble<in T> {
+    fun postValue(value: T?)
+    fun setValue(value: T?)
+}
+
+class Subscriber<T> : MutableLiveData<T>(), PostAble<T> {
 
     fun subscribe(owner: LifecycleOwner, function: (T) -> Unit) {
         super.observe(owner, object : Observer<T> {
@@ -25,6 +30,6 @@ class Subscriber<T> : MutableLiveData<T>() {
     }
 }
 
-fun <T> subscriber(function: Subscriber<T>.() -> Unit): Subscriber<T> {
+fun <T> subscriber(function: PostAble<T>.() -> Unit): Subscriber<T> {
     return Subscriber<T>().apply(function)
 }
