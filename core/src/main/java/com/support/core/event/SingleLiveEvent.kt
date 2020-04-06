@@ -9,7 +9,7 @@ import androidx.lifecycle.Observer
 import java.util.concurrent.atomic.AtomicBoolean
 
 
-class SingleLiveEvent<T> : MediatorLiveData<T>() {
+class SingleLiveEvent<T> : MediatorLiveData<T>(), PostAble<T> {
 
     private val mPending = AtomicBoolean(false)
 

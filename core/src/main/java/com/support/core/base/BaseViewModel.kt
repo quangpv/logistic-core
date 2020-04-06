@@ -7,8 +7,10 @@ import com.support.core.AppExecutors
 import com.support.core.ConcurrentContext
 import com.support.core.ConcurrentScope
 import com.support.core.event.LoadingEvent
+import com.support.core.event.PostAble
 import com.support.core.event.SingleLiveEvent
 import com.support.core.extension.LoadCacheLiveData
+import com.support.core.extension.asMutable
 import com.support.core.extension.doAsync
 import com.support.core.extension.post
 import com.support.core.factory.ViewModelFactory
@@ -74,7 +76,7 @@ abstract class BaseViewModel : ViewModel() {
 
     fun async(
             loadingEvent: LoadingEvent? = loading,
-            errorEvent: SingleLiveEvent<Throwable>? = error,
+            errorEvent: PostAble<Throwable>? = error,
             function: ConcurrentScope.() -> Unit
     ) {
         loadingEvent?.post(true)
