@@ -29,6 +29,7 @@ class NavHostFragment : BaseFragment(0), NavigationOwner, Backable {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         mNavigator = FragmentNavigator(childFragmentManager, args(ID) ?: id)
+        if (savedInstanceState != null) mNavigator?.onRestoreInstance(savedInstanceState)
     }
 
     override fun onCreateView(
@@ -54,11 +55,6 @@ class NavHostFragment : BaseFragment(0), NavigationOwner, Backable {
                 bundleArgs,
                 navOptions
         )
-    }
-
-    override fun onActivityCreated(savedInstanceState: Bundle?) {
-        super.onActivityCreated(savedInstanceState)
-        if (savedInstanceState != null) mNavigator?.onRestoreInstance(savedInstanceState)
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
