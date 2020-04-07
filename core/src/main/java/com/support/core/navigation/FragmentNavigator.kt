@@ -80,7 +80,11 @@ class FragmentNavigator(
     ): Pair<Destination, Fragment> {
         if (navOptions?.singleTop == true) {
             val des = mStack.find(kClass)
-            if (des != null) return des to des.requireFragment
+            if (des != null) {
+                mStack.remove(des)
+                mStack.push(des)
+                return des to des.requireFragment
+            }
         }
         val keepInstance = navOptions?.singleInstance ?: false
 
@@ -265,6 +269,14 @@ class DestinationStack {
                 )
             )
         }
+    }
+
+    fun remove(des: Destination) {
+        mStack.remove(des)
+    }
+
+    fun push(des: Destination) {
+        mStack.push(des)
     }
 
     companion object {

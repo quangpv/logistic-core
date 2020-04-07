@@ -10,7 +10,6 @@ import com.support.core.event.LoadingEvent
 import com.support.core.event.PostAble
 import com.support.core.event.SingleLiveEvent
 import com.support.core.extension.LoadCacheLiveData
-import com.support.core.extension.asMutable
 import com.support.core.extension.doAsync
 import com.support.core.extension.post
 import com.support.core.factory.ViewModelFactory
@@ -153,3 +152,9 @@ inline fun <reified T : ViewModel> Fragment.shareViewModel(): Lazy<T> =
         lazy(LazyThreadSafetyMode.NONE) {
             ViewModelProvider(requireActivity(), ViewModelFactory()).get(T::class.java)
         }
+
+inline fun <reified T : ViewModel> shareViewModel(crossinline function: () -> ViewModelStoreOwner): Lazy<T> =
+        lazy(LazyThreadSafetyMode.NONE) {
+            ViewModelProvider(function(), ViewModelFactory()).get(T::class.java)
+        }
+
