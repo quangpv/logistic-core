@@ -4,7 +4,7 @@ import android.app.Activity
 import android.app.Application
 import android.os.Bundle
 
-class OnForegroundListener(private val function: (isCreate: Boolean) -> Unit) :
+class OnForegroundListener(private val function: (foreground: Boolean) -> Unit) :
     OnAppRunningListener() {
     override fun onBackground() {
         function(false)
