@@ -166,7 +166,7 @@ abstract class MarkerHolder<T>(val item: T) {
         onBind(marker!!)
     }
 
-    abstract fun onCreateOptions(): MarkerOptions
+    protected abstract fun onCreateOptions(): MarkerOptions
 
     protected open fun onBind(marker: Marker) {
     }
