@@ -108,7 +108,11 @@ abstract class ProvideContext {
         return scope(scopeId, T::class.java, function)
     }
 
-    abstract fun <T> get(clazz: Class<T>): T
+    abstract fun <T> getOrNull(clazz: Class<T>): T?
+
+    fun <T> get(clazz: Class<T>): T {
+        return getOrNull(clazz) ?: error("Not found bean ${clazz.simpleName}")
+    }
 
     inline fun <reified T> get(): T {
         return get(T::class.java)
@@ -189,9 +193,8 @@ class DependenceContext : ProvideContext() {
         return getScope(scopeId).lookup(clazz).value
     }
 
-    override fun <T> get(clazz: Class<T>): T {
-        val bean = (lookup(clazz) as? Bean<T>) ?: error("Not found bean ${clazz.simpleName}")
-        return bean.value
+    override fun <T> getOrNull(clazz: Class<T>): T? {
+        return (lookup(clazz) as? Bean<T>)?.value
     }
 
     @Suppress("unchecked_cast")
@@ -232,8 +235,8 @@ class Module(
         context.scope(scopeId, clazz, function)
     }
 
-    override fun <T> get(clazz: Class<T>): T {
-        return context.get(clazz)
+    override fun <T> getOrNull(clazz: Class<T>): T? {
+        return context.getOrNull(clazz)
     }
 
     fun provide() {
