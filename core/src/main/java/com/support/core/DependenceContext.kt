@@ -175,7 +175,7 @@ class DependenceContext : ProvideContext() {
 
             else -> {
                 val annotation = clazz.getAnnotation(Inject::class.java)
-                    ?: error("Not found ${clazz.simpleName}")
+                    ?: error("Not found provider for ${clazz.simpleName}")
                 if (annotation.singleton) single(clazz) {
                     create(clazz)
                 } else factory(clazz) {
