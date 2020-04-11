@@ -6,7 +6,11 @@ import android.util.Patterns
 
 object PhoneUtils {
     fun isValid(number: String): Boolean {
-        val realNumber = number.replace(Regex("[^0-9]"), "")
+        val realNumber = number.replace(Regex("[^0-9+]"), "")
         return !TextUtils.isEmpty(realNumber) && Patterns.PHONE.matcher(realNumber).matches()
+    }
+
+    fun getPhone(phoneNumber: String): String {
+        return phoneNumber.replace(Regex("[^0-9+]"), "")
     }
 }
