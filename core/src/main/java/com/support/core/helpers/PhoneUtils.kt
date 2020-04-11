@@ -7,6 +7,8 @@ import android.util.Patterns
 object PhoneUtils {
     fun isValid(number: String): Boolean {
         val realNumber = number.replace(Regex("[^0-9+]"), "")
+        val len = realNumber.length
+        if (len < 8 || len > 16) return false
         return !TextUtils.isEmpty(realNumber) && Patterns.PHONE.matcher(realNumber).matches()
     }
 
