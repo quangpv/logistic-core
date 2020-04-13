@@ -12,12 +12,17 @@ import com.support.core.ResultLifecycle
 import com.support.core.ResultOwner
 import com.support.core.ResultRegistry
 import com.support.core.functional.FragmentVisibleObserver
+import com.support.core.functional.LocalStore
+import com.support.core.functional.LocalStoreOwner
 
-abstract class BaseFragment(contentLayoutId: Int) : Fragment(contentLayoutId), ResultOwner {
+abstract class BaseFragment(contentLayoutId: Int) : Fragment(contentLayoutId), ResultOwner,
+    LocalStoreOwner {
     private val mResultRegistry = ResultRegistry()
     private val visibleRegistry get() = visibleOwner.lifecycle as VisibleLifecycleRegistry
 
+    override val localStore: LocalStore by lazy(LazyThreadSafetyMode.NONE) { LocalStore() }
     val visibleOwner by lazy(LazyThreadSafetyMode.NONE) { VisibleLifecycleOwner(this) }
+
     override val resultLife: ResultLifecycle get() = mResultRegistry
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -61,9 +66,9 @@ abstract class BaseFragment(contentLayoutId: Int) : Fragment(contentLayoutId), R
     }
 
     override fun onRequestPermissionsResult(
-            requestCode: Int,
-            permissions: Array<out String>,
-            grantResults: IntArray
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
     ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         mResultRegistry.handlePermissionsResult(requestCode, permissions, grantResults)
@@ -72,7 +77,7 @@ abstract class BaseFragment(contentLayoutId: Int) : Fragment(contentLayoutId), R
 }
 
 class VisibleLifecycleRegistry(provider: LifecycleOwner, private val fragment: Fragment) :
-        LifecycleRegistry(provider) {
+    LifecycleRegistry(provider) {
     companion object {
         private const val STATE_NONE = -1
         private const val STATE_CREATED = 1
@@ -83,12 +88,12 @@ class VisibleLifecycleRegistry(provider: LifecycleOwner, private val fragment: F
         private const val STATE_PAUSED = 6
 
         private val EVENT = hashMapOf(
-                STATE_CREATED to Event.ON_CREATE,
-                STATE_DESTROYED to Event.ON_DESTROY,
-                STATE_STARTED to Event.ON_START,
-                STATE_STOPPED to Event.ON_STOP,
-                STATE_RESUMED to Event.ON_RESUME,
-                STATE_PAUSED to Event.ON_PAUSE
+            STATE_CREATED to Event.ON_CREATE,
+            STATE_DESTROYED to Event.ON_DESTROY,
+            STATE_STARTED to Event.ON_START,
+            STATE_STOPPED to Event.ON_STOP,
+            STATE_RESUMED to Event.ON_RESUME,
+            STATE_PAUSED to Event.ON_PAUSE
         )
     }
 
@@ -99,8 +104,8 @@ class VisibleLifecycleRegistry(provider: LifecycleOwner, private val fragment: F
 
     private val childVisibleLifecycle
         get() = (fragment.childFragmentManager.fragments
-                .find { !it.isHidden } as? BaseFragment)
-                ?.visibleOwner?.lifecycle as? VisibleLifecycleRegistry
+            .find { !it.isHidden } as? BaseFragment)
+            ?.visibleOwner?.lifecycle as? VisibleLifecycleRegistry
 
     fun create() {
         next(STATE_CREATED)
@@ -171,7 +176,7 @@ class VisibleLifecycleRegistry(provider: LifecycleOwner, private val fragment: F
 
 class VisibleLifecycleOwner(fragment: Fragment) : LifecycleOwner {
     private val mLifecycle =
-            VisibleLifecycleRegistry(this, fragment)
+        VisibleLifecycleRegistry(this, fragment)
 
     override fun getLifecycle(): Lifecycle {
         return mLifecycle

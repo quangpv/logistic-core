@@ -1,5 +1,6 @@
 package com.support.core.base
 
+import androidx.annotation.CallSuper
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.*
@@ -14,6 +15,7 @@ import com.support.core.extension.doAsync
 import com.support.core.extension.post
 import com.support.core.factory.ViewModelFactory
 import com.support.core.functional.Form
+import com.support.core.functional.LocalStoreOwner
 import com.support.core.isOnMainThread
 import java.util.concurrent.Executor
 
@@ -33,9 +35,9 @@ abstract class BaseViewModel : ViewModel() {
     }
 
     fun <T, V> LiveData<T>.async(
-            loadingEvent: LoadingEvent? = loading,
-            errorEvent: SingleLiveEvent<Throwable>? = error,
-            function: ConcurrentScope.(T) -> V?
+        loadingEvent: LoadingEvent? = loading,
+        errorEvent: SingleLiveEvent<Throwable>? = error,
+        function: ConcurrentScope.(T) -> V?
     ): LiveData<V> {
         val next = MediatorLiveData<V>()
         next.addSource(this) {
@@ -45,9 +47,9 @@ abstract class BaseViewModel : ViewModel() {
     }
 
     fun <T, V> LoadCacheLiveData<T, V>.orAsync(
-            loadingEvent: LoadingEvent? = loading,
-            errorEvent: SingleLiveEvent<Throwable>? = error,
-            function: ConcurrentScope.(T) -> V?
+        loadingEvent: LoadingEvent? = loading,
+        errorEvent: SingleLiveEvent<Throwable>? = error,
+        function: ConcurrentScope.(T) -> V?
     ): LiveData<V> {
         val next = MediatorLiveData<V>()
         next.addSource(this) {
@@ -61,9 +63,9 @@ abstract class BaseViewModel : ViewModel() {
     }
 
     fun <T, V> LoadCacheLiveData<T, V>.thenAsync(
-            loadingEvent: LoadingEvent? = loading,
-            errorEvent: SingleLiveEvent<Throwable>? = error,
-            function: ConcurrentScope.(T) -> V?
+        loadingEvent: LoadingEvent? = loading,
+        errorEvent: SingleLiveEvent<Throwable>? = error,
+        function: ConcurrentScope.(T) -> V?
     ): LiveData<V> {
         val next = MediatorLiveData<V>()
         next.addSource(this) {
@@ -74,9 +76,9 @@ abstract class BaseViewModel : ViewModel() {
     }
 
     fun async(
-            loadingEvent: LoadingEvent? = loading,
-            errorEvent: PostAble<Throwable>? = error,
-            function: ConcurrentScope.() -> Unit
+        loadingEvent: LoadingEvent? = loading,
+        errorEvent: PostAble<Throwable>? = error,
+        function: ConcurrentScope.() -> Unit
     ) {
         loadingEvent?.post(true)
 
@@ -107,9 +109,11 @@ abstract class BaseViewModel : ViewModel() {
         }
     }
 
-    fun diskIO(force: Boolean = true, function: () -> Unit) = io(force, AppExecutors.diskIO, function)
+    fun diskIO(force: Boolean = true, function: () -> Unit) =
+        io(force, AppExecutors.diskIO, function)
 
-    fun networkIO(force: Boolean = true, function: () -> Unit) = io(force, AppExecutors.networkIO, function)
+    fun networkIO(force: Boolean = true, function: () -> Unit) =
+        io(force, AppExecutors.networkIO, function)
 
     fun <T> LiveData<T>.validate(function: (T) -> Unit): LiveData<T> {
         val next = MediatorLiveData<T>()
@@ -137,24 +141,55 @@ abstract class BaseViewModel : ViewModel() {
     }
 }
 
-inline fun <reified T : ViewModel> AppCompatActivity.viewModel(): Lazy<T> =
-        lazy(LazyThreadSafetyMode.NONE) {
-            ViewModelProvider(this, ViewModelFactory()).get(T::class.java)
+interface ViewModelRegistrable {
+
+    @CallSuper
+    fun registry(viewModel: BaseViewModel) {
+        if (this is LocalStoreOwner) {
+            if (!isRegistry(viewModel)) {
+                onRegistryViewModel(viewModel)
+                setRegistered(viewModel)
+            }
         }
+    }
+
+    fun onRegistryViewModel(viewModel: BaseViewModel)
+}
+
+inline fun <reified T : ViewModel> LocalStoreOwner.getViewModel(owner: ViewModelStoreOwner): T {
+    return localStore.get {
+        ViewModelProvider(owner, ViewModelFactory()).get<T>(T::class.java).also {
+            if (it is BaseViewModel && owner is ViewModelRegistrable) owner.registry(it)
+        }
+    }
+}
+
+fun LocalStoreOwner.setRegistered(it: BaseViewModel) {
+    localStore["registry:view:model:${it.javaClass.name}"] = true
+}
+
+fun LocalStoreOwner.isRegistry(it: BaseViewModel): Boolean {
+    return localStore.get("registry:view:model:${it.javaClass.name}") { false }
+}
+
+inline fun <reified T : ViewModel> AppCompatActivity.viewModel(): Lazy<T> =
+    lazy(LazyThreadSafetyMode.NONE) {
+        ViewModelProvider(this, ViewModelFactory()).get(T::class.java)
+    }
 
 
 inline fun <reified T : ViewModel> Fragment.viewModel(): Lazy<T> =
-        lazy(LazyThreadSafetyMode.NONE) {
-            ViewModelProvider(this, ViewModelFactory()).get(T::class.java)
-        }
+    lazy(LazyThreadSafetyMode.NONE) {
+        ViewModelProvider(this, ViewModelFactory()).get(T::class.java)
+    }
 
 inline fun <reified T : ViewModel> Fragment.shareViewModel(): Lazy<T> =
-        lazy(LazyThreadSafetyMode.NONE) {
-            ViewModelProvider(requireActivity(), ViewModelFactory()).get(T::class.java)
-        }
+    lazy(LazyThreadSafetyMode.NONE) {
+        ViewModelProvider(requireActivity(), ViewModelFactory()).get(T::class.java)
+    }
 
 inline fun <reified T : ViewModel> shareViewModel(crossinline function: () -> ViewModelStoreOwner): Lazy<T> =
-        lazy(LazyThreadSafetyMode.NONE) {
-            ViewModelProvider(function(), ViewModelFactory()).get(T::class.java)
-        }
+    lazy(LazyThreadSafetyMode.NONE) {
+        ViewModelProvider(function(), ViewModelFactory()).get(T::class.java)
+    }
 

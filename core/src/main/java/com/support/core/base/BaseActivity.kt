@@ -4,11 +4,15 @@ import android.content.Intent
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.support.core.*
+import com.support.core.functional.LocalStore
+import com.support.core.functional.LocalStoreOwner
 
 abstract class BaseActivity(contentLayoutId: Int) : AppCompatActivity(contentLayoutId),
-    Dispatcher, ResultOwner {
+    Dispatcher, ResultOwner, LocalStoreOwner {
     private val mResultRegistry = ResultRegistry()
     override val resultLife: ResultLifecycle get() = mResultRegistry
+    override val localStore: LocalStore by lazy(LazyThreadSafetyMode.NONE) { LocalStore() }
+
     val permissionChecker: PermissionChecker by lazy(LazyThreadSafetyMode.NONE) {
         PermissionChecker(this)
     }
@@ -16,7 +20,6 @@ abstract class BaseActivity(contentLayoutId: Int) : AppCompatActivity(contentLay
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         mResultRegistry.handleActivityResult(requestCode, resultCode, data)
-
     }
 
     override fun onRequestPermissionsResult(

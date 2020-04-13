@@ -114,6 +114,13 @@ fun View.show(b: Boolean, function: () -> Unit) {
     } else View.GONE
 }
 
+fun View.showOrInvisible(b: Boolean, function: () -> Unit) {
+    visibility = if (b) {
+        function()
+        View.VISIBLE
+    } else View.INVISIBLE
+}
+
 infix fun Boolean.invisible(view: View) {
     view.visibility = if (this) View.INVISIBLE else View.VISIBLE
 }
@@ -124,6 +131,10 @@ operator fun View.plus(view: View): List<View> {
 
 fun View.gone() {
     visibility = View.GONE
+}
+
+fun View.invisible() {
+    visibility = View.INVISIBLE
 }
 
 fun View.show() {
