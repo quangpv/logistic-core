@@ -5,7 +5,7 @@ import androidx.annotation.MainThread
 import androidx.lifecycle.MediatorLiveData
 import androidx.lifecycle.Observer
 
-class EventLiveData<T> : MediatorLiveData<T>() {
+class CompositeLiveData<T> : MediatorLiveData<T>() {
     private val mSources = hashMapOf<LocalEvent<*>, Source<*>>()
 
     @MainThread
@@ -28,7 +28,7 @@ class EventLiveData<T> : MediatorLiveData<T>() {
     }
 
     @MainThread
-    fun <S> addSourceNonNull(
+    fun <S> addSourceNotNull(
             source: LocalEvent<S>,
             function: (S) -> Unit
     ) {
