@@ -14,9 +14,6 @@ import com.support.core.base.BaseActivity
 
 
 open class PermissionChecker(private val activity: BaseActivity) {
-    companion object {
-        const val REQUEST_PERMISSION_CHECKER = 10000
-    }
 
     private var mOpenSettingDialog: AlertDialog? = null
 
@@ -37,11 +34,8 @@ open class PermissionChecker(private val activity: BaseActivity) {
     }
 
     private fun request(permissions: Array<out String>, onPermission: (Boolean) -> Unit) {
-        ActivityCompat.requestPermissions(activity, permissions,
-            REQUEST_PERMISSION_CHECKER
-        )
-        activity.resultLife.onPermissionsResult { requestCodeReceived, _, grantResults ->
-            if (REQUEST_PERMISSION_CHECKER != requestCodeReceived) return@onPermissionsResult
+        val requestCode = requestCodeOf(permissions)
+        activity.resultLife.onPermissionsResult(requestCode) { _, grantResults ->
             if (grantResults.isEmpty()) {
                 onPermission(false)
                 return@onPermissionsResult
@@ -54,36 +48,47 @@ open class PermissionChecker(private val activity: BaseActivity) {
             }
             onPermission(true)
         }
+        ActivityCompat.requestPermissions(activity, permissions, requestCode)
+    }
+
+    private fun requestCodeOf(permissions: Array<out String>): Int {
+        return permissions.hashCode() and 0xffff
     }
 
     private fun isAllowed(vararg permissions: String): Boolean {
         return permissions.fold(true) { acc, permission ->
-            acc && ContextCompat.checkSelfPermission(activity, permission) == PackageManager.PERMISSION_GRANTED
+            acc && ContextCompat.checkSelfPermission(
+                activity,
+                permission
+            ) == PackageManager.PERMISSION_GRANTED
         }
     }
 
-    private fun showSuggestOpenSetting(permissions: Array<out String>, onPermission: (Boolean) -> Unit) {
+    private fun showSuggestOpenSetting(
+        permissions: Array<out String>,
+        onPermission: (Boolean) -> Unit
+    ) {
         if (mOpenSettingDialog == null) {
             mOpenSettingDialog = AlertDialog.Builder(activity)
-                    .setTitle(titleDenied)
-                    .setMessage(messageDenied)
-                    .setPositiveButton("Ok") { _: DialogInterface, _: Int ->
-                        openSetting(permissions, onPermission)
-                    }
-                    .create()
+                .setTitle(titleDenied)
+                .setMessage(messageDenied)
+                .setPositiveButton("Ok") { _: DialogInterface, _: Int ->
+                    openSetting(permissions, onPermission)
+                }
+                .create()
         }
         mOpenSettingDialog!!.show()
     }
 
     private fun openSetting(permissions: Array<out String>, onPermission: (Boolean) -> Unit) {
         val intent = Intent(
-                Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
-                Uri.parse("package:" + activity.packageName))
-        activity.startActivityForResult(intent,
-            REQUEST_PERMISSION_CHECKER
+            Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+            Uri.parse("package:" + activity.packageName)
         )
-        activity.resultLife.onActivityResult(REQUEST_PERMISSION_CHECKER) { _, _ ->
+        val requestCode = requestCodeOf(permissions)
+        activity.resultLife.onActivityResult(requestCode) { _, _ ->
             onPermission(isAllowed(*permissions))
         }
+        activity.startActivityForResult(intent, requestCode)
     }
 }

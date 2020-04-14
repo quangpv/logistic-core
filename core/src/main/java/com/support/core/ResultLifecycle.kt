@@ -14,18 +14,18 @@ interface ResultLifecycle {
 
     fun onActivitySuccessResult(requestCode: Int = REQUEST_FOR_RESULT_INSTANTLY, callback: (data: Intent?) -> Unit)
 
-    fun onPermissionsResult(callback: (requestCode: Int, permissions: Array<out String>, grantResults: IntArray) -> Unit)
+    fun onPermissionsResult(requestCode: Int, callback: (permissions: Array<out String>, grantResults: IntArray) -> Unit)
 
 }
 
 class ResultRegistry : ResultLifecycle {
 
-    private val mPermissions = hashSetOf<(Int, Array<out String>, IntArray) -> Unit>()
+    private val mPermissions = hashMapOf<Int, (Array<out String>, IntArray) -> Unit>()
     private val mActivityResults = hashMapOf<Int, (Int, Intent?) -> Unit>()
     private val mActivitySuccessResults = hashMapOf<Int, (Intent?) -> Unit>()
 
-    override fun onPermissionsResult(callback: (requestCode: Int, permissions: Array<out String>, grantResults: IntArray) -> Unit) {
-        mPermissions.add(callback)
+    override fun onPermissionsResult(requestCode: Int, callback: (permissions: Array<out String>, grantResults: IntArray) -> Unit) {
+        mPermissions[requestCode] = callback
     }
 
     override fun onActivitySuccessResult(requestCode: Int, callback: (data: Intent?) -> Unit) {
@@ -50,7 +50,9 @@ class ResultRegistry : ResultLifecycle {
     }
 
     fun handlePermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
-        mPermissions.forEach { it(requestCode, permissions, grantResults) }
-        mPermissions.clear()
+        mPermissions.filter { it.key == requestCode }.forEach {
+            it.value(permissions, grantResults)
+            mPermissions.remove(it.key)
+        }
     }
 }
