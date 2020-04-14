@@ -56,6 +56,11 @@ abstract class BaseFragment(contentLayoutId: Int) : Fragment(contentLayoutId), R
         visibleRegistry.pause()
     }
 
+    override fun onDestroy() {
+        super.onDestroy()
+        localStore.clear()
+    }
+
     override fun onHiddenChanged(hidden: Boolean) {
         visibleRegistry.hide(hidden)
     }

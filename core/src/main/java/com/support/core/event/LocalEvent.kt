@@ -1,98 +1,119 @@
 package com.support.core.event
 
+import android.annotation.SuppressLint
+import androidx.arch.core.executor.ArchTaskExecutor
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.LifecycleOwner
-import com.support.core.AppExecutors
+import androidx.lifecycle.Observer
 import com.support.core.base.BaseFragment
 
 class LocalEvent<T> : Event<T> {
-    private val mObservers = hashSetOf<IObserver>()
+    private val mObservers = hashMapOf<Observer<*>, ObserverWrapper>()
     private var mValue: T? = null
 
+    var version: Int = START_VERSION
+        private set
+
+    val value: T? get() = mValue
+
     override fun set(value: T?) {
+        post(value)
+    }
+
+    @SuppressLint("RestrictedApi")
+    fun post(value: T? = null) {
+        ArchTaskExecutor.getInstance().executeOnMainThread { doPost(value) }
+    }
+
+    private fun doPost(value: T?) {
         mValue = value
-        notifyChange()
+        version += 1
+        notifyChanges()
+    }
+
+    private fun notifyChanges() {
+        mObservers.values.forEach { it.notifyChange() }
     }
 
     override fun observe(owner: LifecycleOwner, function: (T?) -> Unit) {
-        synchronized(mObservers) { mObservers.add(ObserverWrapper(owner, function)) }
+        val lifeOwner = when (owner) {
+            is BaseFragment -> owner.visibleOwner
+            is Fragment -> owner.viewLifecycleOwner
+            else -> owner
+        }
+        observe(lifeOwner, Observer { function(it) })
     }
 
     fun observeNotNull(owner: LifecycleOwner, function: (T) -> Unit) {
-        observe(owner) {
-            it?.also(function)
-        }
+        observe(owner, Observer(function))
     }
 
-    fun observeForeverNotNull(function: (T) -> Unit) {
-        observeForever {
-            it?.also(function)
-        }
+    fun observe(owner: LifecycleOwner, observer: Observer<T>) {
+        mObservers[observer] = LifeObserver(owner, observer).apply { onAttached() }
     }
 
-    private fun notifyChange() = synchronized(mObservers) {
-        mObservers.forEach { it.notifyChange() }
-    }
-
-    fun listen(event: LocalEvent<T>) {
-        event.observeForever {
-            set(it)
-        }
+    fun observeForever(observer: Observer<T>) {
+        mObservers[observer] = ForeverObserver(observer).apply { onAttached() }
     }
 
     fun observeForever(function: (T?) -> Unit) {
-        synchronized(mObservers) { mObservers.add(ForeverWrapper(function)) }
+        observeForever(Observer { function(it) })
     }
 
-    private interface IObserver {
-        fun notifyChange()
+    fun observeForeverNotNull(function: (T) -> Unit) {
+        observeForever(Observer(function))
     }
 
-    private inner class ForeverWrapper(private val function: (T?) -> Unit) : IObserver {
+    fun removeObserver(observer: Observer<T>) {
+        mObservers.remove(observer)?.onDetached()
+    }
+
+    private abstract class ObserverWrapper {
+        open fun onAttached() {}
+        open fun onDetached() {}
+        abstract fun notifyChange()
+    }
+
+    private inner class LifeObserver(
+            private val owner: LifecycleOwner,
+            private val observer: Observer<T>
+    ) : ObserverWrapper(), LifecycleEventObserver {
+        private var mVersion = version
+
+        override fun onAttached() {
+            owner.lifecycle.addObserver(this)
+        }
+
+        override fun onDetached() {
+            owner.lifecycle.removeObserver(this)
+        }
+
+        override fun onStateChanged(source: LifecycleOwner, event: Lifecycle.Event) {
+            if (event == Lifecycle.Event.ON_DESTROY) {
+                removeObserver(observer)
+            } else if (event == Lifecycle.Event.ON_START) {
+                if (mVersion != version) notifyChange()
+            }
+        }
+
         override fun notifyChange() {
-            AppExecutors.mainIO.execute { function(mValue) }
+            if (!owner.lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)) return
+            mVersion = version
+            observer.onChanged(value)
         }
     }
 
-    private inner class ObserverWrapper(
-            owner: LifecycleOwner,
-            private val function: (T?) -> Unit
-    ) : IObserver {
-        private val lifecycle = when (owner) {
-            is BaseFragment -> owner.visibleOwner.lifecycle
-            is Fragment -> owner.viewLifecycleOwner.lifecycle
-            else -> owner.lifecycle
-        }
-        private var shouldNotify: Boolean = false
+    private inner class ForeverObserver(private val observer: Observer<T>) : ObserverWrapper() {
 
-        init {
-            lifecycle.addObserver(object : LifecycleEventObserver {
-                override fun onStateChanged(source: LifecycleOwner, event: Lifecycle.Event) {
-                    when (event) {
-                        Lifecycle.Event.ON_DESTROY -> {
-                            lifecycle.removeObserver(this)
-                            mObservers.remove(this@ObserverWrapper)
-                        }
-                        Lifecycle.Event.ON_START -> notifyChangeIfNeeded()
-                        else -> {
-                        }
-                    }
-                }
-            })
-        }
-
-        override fun notifyChange() = synchronized(this) {
-            shouldNotify = true
-            notifyChangeIfNeeded()
-        }
-
-        private fun notifyChangeIfNeeded() = synchronized(this) {
-            if (!shouldNotify) return
-            if (!lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)) return
-            AppExecutors.mainIO.execute { function(mValue) }
-            shouldNotify = false
+        override fun notifyChange() {
+            observer.onChanged(value)
         }
     }
+
+    companion object {
+        const val START_VERSION = -1
+    }
+
 }

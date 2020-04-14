@@ -157,7 +157,7 @@ interface ViewModelRegistrable {
 }
 
 inline fun <reified T : ViewModel> LocalStoreOwner.getViewModel(owner: ViewModelStoreOwner): T {
-    return localStore.get {
+    return localStore.get("vm:${javaClass.simpleName}:${owner.javaClass.simpleName}") {
         ViewModelProvider(owner, ViewModelFactory()).get<T>(T::class.java).also {
             if (it is BaseViewModel && owner is ViewModelRegistrable) owner.registry(it)
         }
