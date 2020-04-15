@@ -16,17 +16,18 @@ import com.google.android.gms.location.LocationRequest
 import com.google.android.gms.location.LocationResult
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.maps.model.LatLng
+import com.support.location.latLng
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 
-class LastLocationEngine(private val context: Context) {
+class LastLocationEngine(private val context: Context) : LocationEngine {
     companion object {
         private const val LOCATION_REFRESH_TIME = 1000L
         private const val LOCATION_REFRESH_DISTANCE = 100f
     }
 
-    private var mLastLocation: LastLocation? = null
+    private var mLastLocation: Location? = null
 
     private val mLock = ReentrantLock()
     private val mCondition = mLock.newCondition()
@@ -65,22 +66,9 @@ class LastLocationEngine(private val context: Context) {
     }
 
     private fun setLocation(location: Location) {
-        mLastLocation = LastLocation(location).also {
+        mLastLocation = location.also {
             mOnLocationChangedListener(it.latLng)
         }
-    }
-
-    private class LastLocation(private val location: Location) {
-        companion object {
-            private val HCM_CENTER = Location("HCM Center").apply {
-                latitude = 10.806439
-                longitude = 106.696710
-            }
-            private val FAKE_POSITION = LatLng(1.3504308, 103.72091)
-            private val FAKE_US_POSITION = LatLng(41.879370, -87.629558)
-        }
-
-        val latLng: LatLng get() = LatLng(location.latitude, location.longitude)
     }
 
     private abstract inner class LocationLoader(private val next: LocationLoader? = null) {

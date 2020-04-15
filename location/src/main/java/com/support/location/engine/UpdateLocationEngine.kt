@@ -24,7 +24,7 @@ class UpdateLocationEngine(
         private val context: Context,
         private val interval: Long = 1000L,
         private val minDistance: Float = 0f
-) {
+) : LocationEngine {
     private var mStarted: Boolean = false
     private val mListeners = arrayListOf<OnLocationUpdateListener>()
     private val mEngine = FusedEngine(NetworkEngine(GPSEngine(null)))
@@ -64,12 +64,16 @@ class UpdateLocationEngine(
     }
 
     fun stop() {
-        if (!mStarted) return
+        if (!mStarted) {
+            mConstraint.cancel()
+            return
+        }
         mStarted = false
         mEngine.removeUpdate()
     }
 
     fun addUpdatedListener(listener: OnLocationUpdateListener) {
+        if (mListeners.contains(listener)) return
         mListeners.add(listener)
     }
 

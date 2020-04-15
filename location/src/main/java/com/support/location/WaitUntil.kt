@@ -28,7 +28,7 @@ class WaitUntil(private val accept: () -> Boolean) {
         }, 1000, 1000)
     }
 
-    private fun cancel() {
+    fun cancel() {
         mTimer?.purge()
         mTimer?.cancel()
     }

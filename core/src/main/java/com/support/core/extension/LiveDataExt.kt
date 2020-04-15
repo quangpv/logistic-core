@@ -41,7 +41,7 @@ fun <T> MutableLiveData<T>.loadNotNull(
     return this
 }
 
-fun <T> MutableLiveData<T>.call() {
+fun MutableLiveData<*>.call() {
     this.post(null)
 }
 

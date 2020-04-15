@@ -17,6 +17,9 @@ import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.*
 import com.support.location.engine.LastLocationEngine
+import com.support.location.engine.LocationEngine
+import com.support.location.engine.OnLocationUpdateListener
+import com.support.location.engine.UpdateLocationEngine
 import com.support.location.latLng
 import com.support.location.location
 import com.support.location.map.marker.CircleDrawable
@@ -31,7 +34,7 @@ abstract class MapAdapter(private val fragment: SupportMapFragment) {
     protected open val shouldUseBearing: Boolean get() = false
     val hasLocationEngine: Boolean get() = mEngine != null
 
-    private var mEngine: LastLocationEngine? = null
+    private var mEngine: LocationEngine? = null
     private val handler = Handler()
 
     private var mLocationMarker: Marker? = null
@@ -39,8 +42,10 @@ abstract class MapAdapter(private val fragment: SupportMapFragment) {
     private var mMap: GoogleMap? = null
     protected val context get() = fragment.requireContext()
 
-    private var mOnLocationUpdateListener: ((Location) -> Unit) = {
-        if (mEngine != null) updateMyLocation(it)
+    private var mOnLocationUpdateListener = object : OnLocationUpdateListener {
+        override fun onLocationUpdated(location: Location) {
+            if (mEngine != null) updateMyLocation(location)
+        }
     }
 
     init {
@@ -52,6 +57,8 @@ abstract class MapAdapter(private val fragment: SupportMapFragment) {
             @Suppress("all")
             @OnLifecycleEvent(Lifecycle.Event.ON_DESTROY)
             fun onEvent() {
+                val engine=mEngine
+                if (engine is UpdateLocationEngine) engine.removeUpdatedListener(mOnLocationUpdateListener)
                 mEngine = null
                 onDestroy()
             }
@@ -68,9 +75,14 @@ abstract class MapAdapter(private val fragment: SupportMapFragment) {
     }
 
     @SuppressLint("MissingPermission")
-    fun setLocationEngine(engine: LastLocationEngine) {
+    fun setLocationEngine(engine: LocationEngine) {
         mEngine = engine
-        engine.loadLastLocation { mOnLocationUpdateListener(it.location) }
+        when (engine) {
+            is LastLocationEngine -> engine.loadLastLocation {
+                mOnLocationUpdateListener.onLocationUpdated(it.location)
+            }
+            is UpdateLocationEngine -> engine.addUpdatedListener(mOnLocationUpdateListener)
+        }
     }
 
     private fun updateMyLocation(location: Location) = launch {

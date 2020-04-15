@@ -94,12 +94,13 @@ abstract class BaseViewModel : ViewModel() {
         }
     }
 
-    private fun io(force: Boolean = true, executor: Executor, function: () -> Unit) {
+    private fun io(force: Boolean = true, showError: Boolean = false, executor: Executor, function: () -> Unit) {
         val callable = {
             try {
                 function()
             } catch (t: Throwable) {
                 t.printStackTrace()
+                if (showError) error.postValue(t)
             }
         }
         if (force) executor.execute(callable)
@@ -109,11 +110,11 @@ abstract class BaseViewModel : ViewModel() {
         }
     }
 
-    fun diskIO(force: Boolean = true, function: () -> Unit) =
-        io(force, AppExecutors.diskIO, function)
+    fun diskIO(force: Boolean = true, showError: Boolean = false, function: () -> Unit) =
+        io(force, showError, AppExecutors.diskIO, function)
 
-    fun networkIO(force: Boolean = true, function: () -> Unit) =
-        io(force, AppExecutors.networkIO, function)
+    fun networkIO(force: Boolean = true, showError: Boolean = false, function: () -> Unit) =
+        io(force, showError, AppExecutors.networkIO, function)
 
     fun <T> LiveData<T>.validate(function: (T) -> Unit): LiveData<T> {
         val next = MediatorLiveData<T>()
