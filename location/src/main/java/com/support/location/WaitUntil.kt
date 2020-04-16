@@ -1,35 +1,43 @@
 package com.support.location
 
-import android.os.Handler
-import android.os.Looper
-import java.util.*
+import android.annotation.SuppressLint
+import androidx.arch.core.executor.ArchTaskExecutor
+import androidx.lifecycle.LifecycleOwner
 
 class WaitUntil(private val accept: () -> Boolean) {
-    private var mTimer: Timer? = null
-    private var mHandler = Handler(Looper.getMainLooper())
+    private var mTask: RoundTask? = null
 
     fun start(function: () -> Unit) {
-        mTimer?.purge()
-        mTimer?.cancel()
+        cancel()
 
-        if (accept()) {
-            function()
-            return
-        }
+        mTask = object : RoundTask() {
+            override val isDone: Boolean
+                get() = accept()
 
-        mTimer = Timer()
-        mTimer!!.scheduleAtFixedRate(object : TimerTask() {
-            override fun run() {
-                if (accept()) {
-                    mHandler.post(function)
-                    cancel()
-                }
+            @SuppressLint("RestrictedApi")
+            override fun onDone() {
+                ArchTaskExecutor.getMainThreadExecutor().execute(function)
             }
-        }, 1000, 1000)
+        }
+        RoundRobin.push(mTask!!)
+    }
+
+    fun subscribe(owner: LifecycleOwner, function: () -> Unit) {
+        mTask = object : LifeRoundTask(owner) {
+            override val isDone: Boolean
+                get() = accept()
+
+            @SuppressLint("RestrictedApi")
+            override fun onDone() {
+                super.onDone()
+                ArchTaskExecutor.getMainThreadExecutor().execute(function)
+            }
+        }
+        RoundRobin.push(mTask!!)
     }
 
     fun cancel() {
-        mTimer?.purge()
-        mTimer?.cancel()
+        mTask?.cancel()
+        mTask = null
     }
 }

@@ -1,6 +1,8 @@
 package com.support.location
 
+import android.content.Context
 import android.location.Location
+import android.location.LocationManager
 import com.google.android.gms.maps.model.LatLng
 
 
@@ -23,6 +25,12 @@ fun List<LatLng>.findNearestIndex(pos: LatLng): Int {
     }
     return indexOf(nearestPoint)
 }
+
+val Context.isGPSEnabled: Boolean
+    get() {
+        val locationManager = getSystemService(Context.LOCATION_SERVICE) as LocationManager
+        return locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)
+    }
 
 fun LatLng.distanceTo(latLng: LatLng): Float {
     return this.location.distanceTo(latLng.location)

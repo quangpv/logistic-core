@@ -1,6 +1,5 @@
 package com.support.location.map
 
-import android.annotation.SuppressLint
 import android.graphics.drawable.Drawable
 import android.location.Location
 import android.os.Handler
@@ -16,12 +15,9 @@ import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.*
-import com.support.location.engine.LastLocationEngine
 import com.support.location.engine.LocationEngine
 import com.support.location.engine.OnLocationUpdateListener
-import com.support.location.engine.UpdateLocationEngine
 import com.support.location.latLng
-import com.support.location.location
 import com.support.location.map.marker.CircleDrawable
 
 
@@ -44,7 +40,9 @@ abstract class MapAdapter(private val fragment: SupportMapFragment) {
 
     private var mOnLocationUpdateListener = object : OnLocationUpdateListener {
         override fun onLocationUpdated(location: Location) {
-            if (mEngine != null) updateMyLocation(location)
+            Log.e("UpdateLocation", location.toString())
+            updateMyLocation(location)
+            onMyLocationChanged(location)
         }
     }
 
@@ -54,11 +52,9 @@ abstract class MapAdapter(private val fragment: SupportMapFragment) {
             onMapLoaded(mMap!!)
         }
         fragment.viewLifecycleOwner.lifecycle.addObserver(object : LifecycleObserver {
-            @Suppress("all")
+            @Suppress("unused")
             @OnLifecycleEvent(Lifecycle.Event.ON_DESTROY)
             fun onEvent() {
-                val engine=mEngine
-                if (engine is UpdateLocationEngine) engine.removeUpdatedListener(mOnLocationUpdateListener)
                 mEngine = null
                 onDestroy()
             }
@@ -74,21 +70,15 @@ abstract class MapAdapter(private val fragment: SupportMapFragment) {
         }
     }
 
-    @SuppressLint("MissingPermission")
     fun setLocationEngine(engine: LocationEngine) {
+        if (mEngine == engine) return
+        mEngine?.unsubscribe(mOnLocationUpdateListener)
         mEngine = engine
-        when (engine) {
-            is LastLocationEngine -> engine.loadLastLocation {
-                mOnLocationUpdateListener.onLocationUpdated(it.location)
-            }
-            is UpdateLocationEngine -> engine.addUpdatedListener(mOnLocationUpdateListener)
-        }
+        engine.subscribe(fragment.viewLifecycleOwner, mOnLocationUpdateListener)
     }
 
     private fun updateMyLocation(location: Location) = launch {
         it.getMyLocationMarker(location).animateTo(location)
-        onMyLocationChanged(location)
-        Log.e("MyLocation", location.toString())
     }
 
     protected open fun onMyLocationChanged(location: Location) {
@@ -97,11 +87,11 @@ abstract class MapAdapter(private val fragment: SupportMapFragment) {
     private fun GoogleMap.getMyLocationMarker(location: Location): Marker {
         if (mLocationMarker == null) {
             mLocationMarker = addMarker(
-                MarkerOptions()
-                    .flat(true)
-                    .icon(onCreateMyLocationIcon())
-                    .anchor(0.5f, 0.5f)
-                    .position(location.latLng)
+                    MarkerOptions()
+                            .flat(true)
+                            .icon(onCreateMyLocationIcon())
+                            .anchor(0.5f, 0.5f)
+                            .position(location.latLng)
             )
             onMyLocationFirstDetected(location)
         }
@@ -145,7 +135,7 @@ abstract class MapAdapter(private val fragment: SupportMapFragment) {
 
     protected open fun onCreateMyLocationIcon(): BitmapDescriptor {
         return BitmapDescriptorFactory
-            .fromBitmap(CircleDrawable().toBitmap(100, 100))
+                .fromBitmap(CircleDrawable().toBitmap(100, 100))
     }
 
     protected fun launch(function: (GoogleMap) -> Unit) {
