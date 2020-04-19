@@ -59,9 +59,9 @@ fun TextView.format(vararg format: Any): String {
 }
 
 fun TextView.addSpan(
-    spanValue: String,
-    spanned: CharacterStyle,
-    textValue: String = text.toString()
+        spanValue: String,
+        spanned: CharacterStyle,
+        textValue: String = text.toString()
 ) {
     val span = SpannableString(textValue)
     val start = span.indexOf(spanValue)
@@ -79,10 +79,10 @@ fun ViewGroup.inflate(id: Int): View {
 }
 
 fun Context.with(
-    attrs: AttributeSet?,
-    type: IntArray,
-    defStyleAttr: Int,
-    function: (TypedArray) -> Unit
+        attrs: AttributeSet?,
+        type: IntArray,
+        defStyleAttr: Int,
+        function: (TypedArray) -> Unit
 ) {
     if (attrs != null) {
         val typed = obtainStyledAttributes(attrs, type, defStyleAttr, 0)
@@ -92,7 +92,14 @@ fun Context.with(
 }
 
 infix fun Boolean.enable(view: View) {
-    view.isEnabled = this
+    view.dispatchEnabled(this)
+}
+
+private fun View.dispatchEnabled(b: Boolean) {
+    isEnabled = b
+    if (this is ViewGroup) (0 until childCount).forEach {
+        getChildAt(it).dispatchEnabled(b)
+    }
 }
 
 infix fun Boolean.enable(views: List<View>) {

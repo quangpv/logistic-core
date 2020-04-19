@@ -63,7 +63,8 @@ open class RecyclerHolder<T>(itemView: View) : RecyclerView.ViewHolder(itemView)
 
     override val containerView: View?
         get() = itemView
-    protected var item: T? = null
+    var item: T? = null
+        private set
 
     fun subscribe(owner: LifecycleOwner) {
         owner.lifecycle.addObserver(LifecycleDestroyObserver {

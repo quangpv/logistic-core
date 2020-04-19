@@ -30,13 +30,13 @@ abstract class MapAdapter(private val fragment: SupportMapFragment) {
     protected open val shouldUseBearing: Boolean get() = false
     val hasLocationEngine: Boolean get() = mEngine != null
 
-    private var mEngine: LocationEngine? = null
-    private val handler = Handler()
-
-    private var mLocationMarker: Marker? = null
+    private var mLayoutAlready = false
     private val mCallQueue = arrayListOf<(GoogleMap) -> Unit>()
+    private var mEngine: LocationEngine? = null
     private var mMap: GoogleMap? = null
-    protected val context get() = fragment.requireContext()
+
+    private val handler = Handler()
+    private var mLocationMarker: Marker? = null
 
     private var mOnLocationUpdateListener = object : OnLocationUpdateListener {
         override fun onLocationUpdated(location: Location) {
@@ -46,11 +46,23 @@ abstract class MapAdapter(private val fragment: SupportMapFragment) {
         }
     }
 
+    protected val context get() = fragment.requireContext()
+    private val isReady get() = mMap != null && mLayoutAlready
+
     init {
+        fragment.requireView().addOnLayoutChangeListener { _, left, top, right, bottom, _, _, _, _ ->
+            if (!mLayoutAlready) {
+                mLayoutAlready = right > left && bottom > top
+                notifyMapLoadedIfCan()
+            }
+        }
         fragment.getMapAsync {
             mMap = it
-            onMapLoaded(mMap!!)
+            mMap!!.setOnMapLoadedCallback {
+                notifyMapLoadedIfCan()
+            }
         }
+
         fragment.viewLifecycleOwner.lifecycle.addObserver(object : LifecycleObserver {
             @Suppress("unused")
             @OnLifecycleEvent(Lifecycle.Event.ON_DESTROY)
@@ -61,14 +73,23 @@ abstract class MapAdapter(private val fragment: SupportMapFragment) {
         })
     }
 
-    protected open fun onDestroy() {}
-
-    protected open fun onMapLoaded(map: GoogleMap) {
+    private fun notifyMapLoadedIfCan() {
+        if (!isReady) return
+        onMapLoaded(mMap!!)
         synchronized(mCallQueue) {
-            mCallQueue.forEach { it(map) }
+            mCallQueue.forEach { it(mMap!!) }
             mCallQueue.clear()
         }
     }
+
+    protected fun launch(function: (GoogleMap) -> Unit) {
+        if (isReady) function(mMap!!)
+        else synchronized(mCallQueue) { mCallQueue.add(function) }
+    }
+
+    protected open fun onDestroy() {}
+
+    protected open fun onMapLoaded(map: GoogleMap) {}
 
     fun setLocationEngine(engine: LocationEngine) {
         if (mEngine == engine) return
@@ -136,11 +157,6 @@ abstract class MapAdapter(private val fragment: SupportMapFragment) {
     protected open fun onCreateMyLocationIcon(): BitmapDescriptor {
         return BitmapDescriptorFactory
                 .fromBitmap(CircleDrawable().toBitmap(100, 100))
-    }
-
-    protected fun launch(function: (GoogleMap) -> Unit) {
-        if (mMap != null) function(mMap!!)
-        else synchronized(mCallQueue) { mCallQueue.add(function) }
     }
 
     fun getDimen(id: Int): Int {
