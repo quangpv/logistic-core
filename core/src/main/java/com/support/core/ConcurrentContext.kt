@@ -1,14 +1,13 @@
 package com.support.core
 
-import android.os.Looper
 import java.util.concurrent.Callable
 import java.util.concurrent.CancellationException
 import java.util.concurrent.ExecutionException
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 
-private val networkIO get() = AppExecutors.concurrentIO
-private val launchIO get() = AppExecutors.networkIO
+private val asyncIO get() = AppExecutors.concurrentIO
+private val launchIO get() = AppExecutors.launchIO
 
 class ConcurrentContext {
     private val mScopes = arrayListOf<ConcurrentScope>()
@@ -19,21 +18,17 @@ class ConcurrentContext {
     }
 
     fun launch(function: ConcurrentScope.() -> Unit) {
-        mScopes.add(newScope(function))
-    }
-
-    private fun newScope(function: ConcurrentScope.() -> Unit) = ConcurrentScope().apply {
-        val executor = Runnable {
+        val scope = ConcurrentScope()
+        mScopes.add(scope)
+        launchIO.execute {
             try {
-                function()
+                scope.function()
             } catch (e: Throwable) {
                 e.printStackTrace()
             } finally {
-                mScopes.remove(this)
+                mScopes.remove(scope)
             }
         }
-        if (Looper.getMainLooper() != Looper.myLooper()) executor.run()
-        else launchIO.execute(executor)
     }
 }
 
@@ -115,7 +110,7 @@ class PromiseError(val promise: Promise<*>, val error: Throwable)
 
 class Promise<T>(private val scope: ConcurrentScope, function: () -> T) {
     private var mScopeError: Throwable? = null
-    private val mFuture = networkIO.submit(Callable<T> {
+    private val mFuture = asyncIO.submit(Callable<T> {
         try {
             function()
         } catch (e: Throwable) {
@@ -130,7 +125,7 @@ class Promise<T>(private val scope: ConcurrentScope, function: () -> T) {
             mFuture.get()
         } catch (e: Throwable) {
             if ((e is InterruptedException || e is CancellationException)
-                && mScopeError != null
+                    && mScopeError != null
             ) throw mScopeError!!
 
             if (e is ExecutionException) throw e.cause ?: e

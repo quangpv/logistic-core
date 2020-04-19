@@ -17,15 +17,14 @@ import com.support.core.factory.ViewModelFactory
 import com.support.core.functional.Form
 import com.support.core.functional.LocalStoreOwner
 import com.support.core.isOnMainThread
-import java.util.concurrent.Executor
 
 abstract class BaseViewModel : ViewModel() {
+    private val mConcurrent = ConcurrentContext()
 
     val refresh = MutableLiveData<Any>()
     val error = SingleLiveEvent<Throwable>()
     val loading = LoadingEvent()
     val viewLoading = LoadingEvent()
-    private val mConcurrent = ConcurrentContext()
 
     open fun onCreate() {}
 
@@ -94,7 +93,7 @@ abstract class BaseViewModel : ViewModel() {
         }
     }
 
-    private fun io(force: Boolean = true, showError: Boolean = false, executor: Executor, function: () -> Unit) {
+    fun diskIO(showError: Boolean = false, function: () -> Unit) {
         val callable = {
             try {
                 function()
@@ -103,18 +102,10 @@ abstract class BaseViewModel : ViewModel() {
                 if (showError) error.postValue(t)
             }
         }
-        if (force) executor.execute(callable)
-        else {
-            if (isOnMainThread) executor.execute(callable)
-            else callable()
-        }
+
+        if (isOnMainThread) AppExecutors.diskIO.execute(callable)
+        else callable()
     }
-
-    fun diskIO(force: Boolean = true, showError: Boolean = false, function: () -> Unit) =
-            io(force, showError, AppExecutors.diskIO, function)
-
-    fun networkIO(force: Boolean = true, showError: Boolean = false, function: () -> Unit) =
-            io(force, showError, AppExecutors.networkIO, function)
 
     fun <T> LiveData<T>.validate(function: (T) -> Unit): LiveData<T> {
         val next = MediatorLiveData<T>()
@@ -142,15 +133,16 @@ abstract class BaseViewModel : ViewModel() {
     }
 }
 
-interface ViewModelRegistrable {
+interface ViewModelRegistrable : LocalStoreOwner {
 
     @CallSuper
     fun registry(viewModel: BaseViewModel) {
-        if (this is LocalStoreOwner) {
-            if (!isRegistry(viewModel)) {
-                onRegistryViewModel(viewModel)
-                setRegistered(viewModel)
-            }
+        var viewModelId = "registry:view:model:${viewModel.javaClass.name}"
+        if (this is ViewModelStoreOwner) viewModelId = "$viewModelId:shared:${viewModel.isShared(this)}"
+
+        if (!localStore.get(viewModelId) { false }) {
+            onRegistryViewModel(viewModel)
+            localStore[viewModelId] = true
         }
     }
 
@@ -163,17 +155,9 @@ inline fun <reified T : ViewModel> LocalStoreOwner.getViewModel(owner: ViewModel
     }
 }
 
-fun LocalStoreOwner.setRegistered(it: BaseViewModel) {
-    localStore["registry:view:model:${it.javaClass.name}"] = true
-}
-
-fun LocalStoreOwner.isRegistry(it: BaseViewModel): Boolean {
-    return localStore.get("registry:view:model:${it.javaClass.name}") { false }
-}
-
 inline fun <reified T : ViewModel> ViewModelStoreOwner.getViewModel(): T {
     return ViewModelProvider(this, ViewModelFactory()).get<T>(T::class.java).also {
-        if (it is BaseViewModel && this is ViewModelRegistrable) this.registry(it)
+        if (it is BaseViewModel && this is ViewModelRegistrable) registry(it)
     }
 }
 
