@@ -3,6 +3,7 @@ package com.support.core
 import java.util.concurrent.Callable
 import java.util.concurrent.CancellationException
 import java.util.concurrent.ExecutionException
+import java.util.concurrent.Future
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 
@@ -12,46 +13,60 @@ private val launchIO get() = AppExecutors.launchIO
 class ConcurrentContext {
     private val mScopes = arrayListOf<ConcurrentScope>()
 
-    fun cancel() {
+    fun cancel() = synchronized(this) {
         mScopes.forEach { it.cancel() }
-        mScopes.clear()
     }
 
-    fun launch(function: ConcurrentScope.() -> Unit) {
-        val scope = ConcurrentScope()
+    fun launch(function: ConcurrentScope.() -> Unit) = synchronized(this) {
+        val scope = ConcurrentScope(this)
         mScopes.add(scope)
-        launchIO.execute {
-            try {
-                scope.function()
-            } catch (e: Throwable) {
-                e.printStackTrace()
-            } finally {
-                mScopes.remove(scope)
-            }
-        }
+        scope.execute(function)
+    }
+
+    fun remove(scope: ConcurrentScope) = synchronized(this) {
+        mScopes.remove(scope)
     }
 }
 
-class ConcurrentScope {
-
+class ConcurrentScope(val context: ConcurrentContext) {
+    private var mLaunch: Future<*>? = null
     private val mTasks = arrayListOf<Promise<*>>()
 
-    fun cancel(ignore: PromiseError) {
+    fun cancel(ignore: PromiseError) = synchronized(this) {
         mTasks.forEach { if (it != ignore.promise) it.cancel(ignore.error) }
-        mTasks.clear()
     }
 
-    fun cancel() {
+    fun cancel() = synchronized(this) {
         mTasks.forEach { it.cancel() }
-        mTasks.clear()
+        mLaunch?.cancel(true)
     }
 
-    fun <T> task(function: () -> T): Promise<T> {
-        return Promise(this, function).also { mTasks.add(it) }
+    fun <T> task(function: () -> T): Promise<T> = synchronized(this) {
+        Promise(this, function).also { mTasks.add(it) }
     }
 
     fun <T> ConcurrentExecutable<T>.await(): T {
         return execute(this@ConcurrentScope)
+    }
+
+    fun remove(promise: Promise<*>) = synchronized(this) {
+        mTasks.remove(promise)
+        if (mTasks.isEmpty()) {
+            mLaunch = null
+            context.remove(this)
+        }
+    }
+
+    fun execute(function: ConcurrentScope.() -> Unit) {
+        if (mLaunch != null) return
+
+        mLaunch = launchIO.submit {
+            try {
+                function()
+            } catch (e: Throwable) {
+                e.printStackTrace()
+            }
+        }
     }
 }
 
@@ -90,7 +105,10 @@ class ConcurrentContinue<T>(private val lock: ReentrantLock) {
     }
 }
 
-fun <T> continuation(lock: ReentrantLock = ReentrantLock(), function: (ConcurrentContinue<T>) -> Unit): T {
+fun <T> continuation(
+    lock: ReentrantLock = ReentrantLock(),
+    function: (ConcurrentContinue<T>) -> Unit
+): T {
     val con = ConcurrentContinue<T>(lock)
     function(con)
     return con.await()
@@ -109,6 +127,7 @@ class ConcurrentExecutable<T>(private val function: ConcurrentScope.() -> T) {
 class PromiseError(val promise: Promise<*>, val error: Throwable)
 
 class Promise<T>(private val scope: ConcurrentScope, function: () -> T) {
+
     private var mScopeError: Throwable? = null
     private val mFuture = asyncIO.submit(Callable<T> {
         try {
@@ -117,6 +136,8 @@ class Promise<T>(private val scope: ConcurrentScope, function: () -> T) {
             if (e is InterruptedException || e is CancellationException) throw e
             scope.cancel(PromiseError(this, e))
             throw e
+        } finally {
+            scope.remove(this)
         }
     })
 
@@ -125,7 +146,7 @@ class Promise<T>(private val scope: ConcurrentScope, function: () -> T) {
             mFuture.get()
         } catch (e: Throwable) {
             if ((e is InterruptedException || e is CancellationException)
-                    && mScopeError != null
+                && mScopeError != null
             ) throw mScopeError!!
 
             if (e is ExecutionException) throw e.cause ?: e

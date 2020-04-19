@@ -12,14 +12,14 @@ interface TaskExecutors {
     val scheduler: ScheduledExecutorService
     val mainIO: Executor
 
-    val launchIO: Executor
+    val launchIO: ExecutorService
     val concurrentIO: ExecutorService
 }
 
 class AppExecutors : TaskExecutors {
 
     override val diskIO: Executor = Executors.newSingleThreadExecutor()
-    override val launchIO: Executor = Executors.newFixedThreadPool(3)
+    override val launchIO: ExecutorService = Executors.newFixedThreadPool(3)
     override val scheduler: ScheduledExecutorService = Executors.newScheduledThreadPool(2)
     override val mainIO: Executor = MainExecutor()
     override val concurrentIO: ExecutorService = Executors.newCachedThreadPool()
@@ -32,7 +32,7 @@ class AppExecutors : TaskExecutors {
         val scheduler: ScheduledExecutorService get() = mDelegate?.scheduler ?: sInstance.scheduler
         val mainIO: Executor get() = mDelegate?.mainIO ?: sInstance.mainIO
 
-        val launchIO: Executor get() = mDelegate?.launchIO ?: sInstance.launchIO
+        val launchIO: ExecutorService get() = mDelegate?.launchIO ?: sInstance.launchIO
         val concurrentIO: ExecutorService get() = mDelegate?.concurrentIO ?: sInstance.concurrentIO
 
         fun setDelegate(delegate: TaskExecutors?) {
