@@ -26,7 +26,7 @@ abstract class LifecycleLocationDelegate(private val context: Context) : Locatio
         private val mObserver = LifecycleEventObserver { _, event ->
             when (event) {
                 Lifecycle.Event.ON_DESTROY -> unsubscribe(listener)
-                Lifecycle.Event.ON_START -> requestUpdateIfNeeded()
+                Lifecycle.Event.ON_RESUME -> requestUpdateIfNeeded()
                 else -> {
                 }
             }
