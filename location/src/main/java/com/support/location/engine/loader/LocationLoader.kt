@@ -33,4 +33,5 @@ abstract class LocationLoader(val next: LocationLoader?) {
     abstract fun contains(listener: OnLocationUpdateListener): Boolean
     protected abstract fun requestCallback(listener: OnLocationUpdateListener)
     protected abstract fun removeCallback(listener: OnLocationUpdateListener): Boolean
+    abstract fun getLastLocation(function: OnLocationUpdateListener)
 }

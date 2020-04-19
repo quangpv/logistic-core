@@ -24,9 +24,22 @@ class LastLocationEngine(
 
     override val delegate: LocationEngine by lazy(LazyThreadSafetyMode.NONE) {
         object : LifecycleLocationDelegate(context) {
+            private var mRemoved: Boolean = false
+
             @SuppressLint("MissingPermission")
             override fun onRequest(listener: OnLocationUpdateListener) {
-                loadLastLocation(listener)
+                mRemoved = false
+
+                loadLastLocation(object : OnLocationUpdateListener {
+                    override fun onLocationUpdated(location: Location) {
+                        if (mRemoved) return
+                        listener.onLocationUpdated(location)
+                    }
+                })
+            }
+
+            override fun onRemove(listener: OnLocationUpdateListener) {
+                mRemoved = true
             }
         }
     }
@@ -35,6 +48,10 @@ class LastLocationEngine(
     @RequiresPermission(Manifest.permission.ACCESS_COARSE_LOCATION)
     fun loadLastLocation(function: OnLocationUpdateListener) = ArchTaskExecutor.getInstance().executeOnMainThread {
         loader.loadLastLocation(function)
+    }
+
+    fun getLastLocation(function: OnLocationUpdateListener) {
+        loader.getLastLocation(function)
     }
 
     @RequiresPermission(Manifest.permission.ACCESS_COARSE_LOCATION)

@@ -48,6 +48,10 @@ abstract class HardwareLoader(
         mLocationManager.requestLocationUpdates(provider, options.interval, options.minDistance, mLastLocationCallback!!)
     }
 
+    override fun getLastLocation(function: OnLocationUpdateListener) {
+        loadLastLocation(function)
+    }
+
     @SuppressLint("MissingPermission")
     override fun requestCallback(listener: OnLocationUpdateListener) {
         if (mCallbacks.containsKey(listener)) return

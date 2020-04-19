@@ -18,4 +18,12 @@ class MapLocationEngine(
             }
         }
     }
+
+    fun requestUpdate(listener: OnLocationUpdateListener) {
+        loader.requestUpdate(listener)
+    }
+
+    fun removeUpdate(listener: OnLocationUpdateListener) {
+        loader.removeUpdate(listener)
+    }
 }

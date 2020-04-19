@@ -68,6 +68,7 @@ abstract class MapAdapter(private val fragment: SupportMapFragment) {
             @OnLifecycleEvent(Lifecycle.Event.ON_DESTROY)
             fun onEvent() {
                 mEngine = null
+                mMap = null
                 onDestroy()
             }
         })

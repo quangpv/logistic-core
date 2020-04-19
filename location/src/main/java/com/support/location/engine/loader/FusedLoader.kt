@@ -36,6 +36,15 @@ class FusedLoader(context: Context,
         }
     }
 
+    override fun getLastLocation(function: OnLocationUpdateListener) {
+        mFusedLocationClient.lastLocation.addOnSuccessListener {
+            if (it != null) function.onLocationUpdated(it)
+            else next?.getLastLocation(function)
+        }.addOnCanceledListener {
+            next?.getLastLocation(function)
+        }
+    }
+
     override fun contains(listener: OnLocationUpdateListener): Boolean {
         return mCallbacks.containsKey(listener)
     }
