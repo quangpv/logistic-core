@@ -4,7 +4,6 @@ import android.graphics.drawable.Drawable
 import android.location.Location
 import android.os.Handler
 import android.os.SystemClock
-import android.util.Log
 import android.view.animation.LinearInterpolator
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.drawable.toBitmap
@@ -18,6 +17,7 @@ import com.google.android.gms.maps.model.*
 import com.support.location.engine.LocationEngine
 import com.support.location.engine.OnLocationUpdateListener
 import com.support.location.latLng
+import com.support.location.location
 import com.support.location.map.marker.CircleDrawable
 
 
@@ -40,8 +40,7 @@ abstract class MapAdapter(private val fragment: SupportMapFragment) {
 
     private var mOnLocationUpdateListener = object : OnLocationUpdateListener {
         override fun onLocationUpdated(location: Location) {
-            Log.e("UpdateLocation", location.toString())
-            updateMyLocation(location)
+            setMyLocation(location.latLng)
             onMyLocationChanged(location)
         }
     }
@@ -99,25 +98,20 @@ abstract class MapAdapter(private val fragment: SupportMapFragment) {
         engine.subscribe(fragment.viewLifecycleOwner, mOnLocationUpdateListener)
     }
 
-    private fun updateMyLocation(location: Location) = launch {
-        it.getMyLocationMarker(location).animateTo(location)
-    }
-
     protected open fun onMyLocationChanged(location: Location) {
     }
 
-    private fun GoogleMap.getMyLocationMarker(location: Location): Marker {
+    fun setMyLocation(latLng: LatLng) = launch {
         if (mLocationMarker == null) {
-            mLocationMarker = addMarker(
+            mLocationMarker = it.addMarker(
                     MarkerOptions()
                             .flat(true)
                             .icon(onCreateMyLocationIcon())
                             .anchor(0.5f, 0.5f)
-                            .position(location.latLng)
+                            .position(latLng)
             )
-            onMyLocationFirstDetected(location)
-        }
-        return mLocationMarker!!
+            onMyLocationFirstDetected(latLng.location)
+        } else mLocationMarker!!.position = latLng
     }
 
     protected open fun onMyLocationFirstDetected(location: Location) = launch {
