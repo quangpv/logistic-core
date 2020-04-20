@@ -17,7 +17,12 @@ class LastLocationEngine(
         private val context: Context,
         private val loader: LocationLoader = LocationLoader.getDefault(context)
 ) : LocationEngine {
+    companion object {
+        const val TIME_TO_UPDATE = 5000L
+    }
+
     private var mLastLocation: Location? = null
+    private var mLastUpdate: Long = 0
 
     private val mLock = ReentrantLock()
     private val mCondition = mLock.newCondition()
@@ -47,7 +52,17 @@ class LastLocationEngine(
     @SuppressLint("RestrictedApi")
     @RequiresPermission(Manifest.permission.ACCESS_COARSE_LOCATION)
     fun loadLastLocation(function: OnLocationUpdateListener) = ArchTaskExecutor.getInstance().executeOnMainThread {
-        loader.loadLastLocation(function)
+        if (System.currentTimeMillis() - mLastUpdate < TIME_TO_UPDATE && mLastLocation != null) {
+            function.onLocationUpdated(mLastLocation!!)
+            return@executeOnMainThread
+        }
+        loader.loadLastLocation(object : OnLocationUpdateListener {
+            override fun onLocationUpdated(location: Location) {
+                mLastLocation = location
+                mLastUpdate = System.currentTimeMillis()
+                function.onLocationUpdated(location)
+            }
+        })
     }
 
     fun getLastLocation(function: OnLocationUpdateListener) {
