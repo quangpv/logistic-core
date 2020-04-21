@@ -102,6 +102,7 @@ abstract class MapAdapter(private val fragment: SupportMapFragment) {
     }
 
     fun setMyLocation(latLng: LatLng) = launch {
+        if (latLng.latitude == 0.0 && latLng.longitude == 0.0) return@launch
         if (mLocationMarker == null) {
             mLocationMarker = it.addMarker(
                     MarkerOptions()
