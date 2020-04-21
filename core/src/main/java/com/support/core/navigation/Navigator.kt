@@ -12,7 +12,7 @@ import kotlin.reflect.KClass
 
 abstract class Navigator(private val fragmentManager: FragmentManager, @IdRes val container: Int) {
     abstract val lastDestination: Destination?
-    var onNavigateChangedListener: (KClass<*>) -> Unit = {}
+    var onNavigateChangedListener: (KClass<out Fragment>) -> Unit = {}
     private val mTransactionManager = TransactionManager()
 
     abstract fun navigate(
