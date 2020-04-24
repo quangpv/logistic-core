@@ -6,16 +6,25 @@ import java.net.Socket
 import java.net.UnknownHostException
 import java.security.GeneralSecurityException
 import java.security.KeyStore
+import java.security.SecureRandom
+import java.security.cert.X509Certificate
 import java.util.*
 import javax.net.ssl.*
 
 
-class TLSSocketFactory : SSLSocketFactory() {
+class TLSSocketFactory(protocol: String = PROTOCOL_SSL, systemTrust: Boolean = false) : SSLSocketFactory() {
     private var delegate: SSLSocketFactory
 
+    companion object {
+        const val PROTOCOL_TLS = "TLS"
+        const val PROTOCOL_SSL = "SSL"
+    }
+
     init {
-        val context = SSLContext.getInstance("TLS")
-        context.init(null, arrayOf(systemDefaultTrustManager()), null)
+        val context = SSLContext.getInstance(protocol)
+        context.init(null, arrayOf(if (systemTrust) systemDefaultTrustManager()
+        else unsafeTrustManager()
+        ), SecureRandom())
         delegate = context.socketFactory
     }
 
@@ -80,4 +89,20 @@ class TLSSocketFactory : SSLSocketFactory() {
         }
 
     }
+
+    fun unsafeTrustManager(): X509TrustManager {
+        return object : X509TrustManager {
+            override fun checkClientTrusted(chain: Array<out X509Certificate>?, authType: String?) {
+            }
+
+            override fun checkServerTrusted(chain: Array<out X509Certificate>?, authType: String?) {
+            }
+
+            override fun getAcceptedIssuers(): Array<X509Certificate> {
+                return arrayOf()
+            }
+        }
+    }
+
+
 }

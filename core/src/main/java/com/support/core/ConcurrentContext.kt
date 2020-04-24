@@ -28,7 +28,7 @@ class ConcurrentContext {
     }
 }
 
-class ConcurrentScope(val context: ConcurrentContext) {
+class ConcurrentScope(private val context: ConcurrentContext) {
     private var mLaunch: Future<*>? = null
     private val mTasks = arrayListOf<Promise<*>>()
 
@@ -106,8 +106,8 @@ class ConcurrentContinue<T>(private val lock: ReentrantLock) {
 }
 
 fun <T> continuation(
-    lock: ReentrantLock = ReentrantLock(),
-    function: (ConcurrentContinue<T>) -> Unit
+        lock: ReentrantLock = ReentrantLock(),
+        function: (ConcurrentContinue<T>) -> Unit
 ): T {
     val con = ConcurrentContinue<T>(lock)
     function(con)
@@ -146,7 +146,7 @@ class Promise<T>(private val scope: ConcurrentScope, function: () -> T) {
             mFuture.get()
         } catch (e: Throwable) {
             if ((e is InterruptedException || e is CancellationException)
-                && mScopeError != null
+                    && mScopeError != null
             ) throw mScopeError!!
 
             if (e is ExecutionException) throw e.cause ?: e
