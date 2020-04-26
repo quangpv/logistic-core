@@ -1,8 +1,10 @@
 package com.support.core.functional
 
 import android.util.Log
+import androidx.annotation.CallSuper
 
 interface WorkRunnable : Runnable {
+    @CallSuper
     override fun run() {
         try {
             doWork()
