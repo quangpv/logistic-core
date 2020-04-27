@@ -34,6 +34,8 @@ fun View.setMarginTop(@DimenRes dimen: Int) {
 
 @Suppress("unchecked_cast")
 fun ViewGroup.setContentView(id: Int) {
+    removeAllViews()
+    if (id == 0) return
     var cache = tag as? HashMap<Int, View>
     if (cache == null) {
         cache = hashMapOf()
@@ -45,7 +47,6 @@ fun ViewGroup.setContentView(id: Int) {
         }
     }
     if (getChildAt(0) == view) return
-    removeAllViews()
     addView(view)
 }
 
