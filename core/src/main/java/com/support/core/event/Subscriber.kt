@@ -20,11 +20,21 @@ class Subscriber<T> : MutableLiveData<T>(), PostAble<T> {
             else -> this
         }
 
-    fun subscribe(owner: LifecycleOwner, function: (T) -> Unit) {
+    fun subscribe(owner: LifecycleOwner, function: (T?) -> Unit) {
 
         super.observe(owner.subscribeOwner, object : Observer<T> {
             override fun onChanged(t: T) {
                 function(t)
+                removeObserver(this)
+            }
+        })
+    }
+
+    fun subscribeNotNull(owner: LifecycleOwner, function: (T) -> Unit) {
+
+        super.observe(owner.subscribeOwner, object : Observer<T> {
+            override fun onChanged(t: T) {
+                if (t != null) function(t)
                 removeObserver(this)
             }
         })
