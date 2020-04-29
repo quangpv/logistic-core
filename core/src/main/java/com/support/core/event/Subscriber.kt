@@ -30,7 +30,7 @@ class Subscriber<T> : MutableLiveData<T>(), PostAble<T> {
         })
     }
 
-    fun subscribeNotNull(owner: LifecycleOwner, function: (T) -> Unit) {
+    fun then(owner: LifecycleOwner, function: (T) -> Unit) {
 
         super.observe(owner.subscribeOwner, object : Observer<T> {
             override fun onChanged(t: T) {

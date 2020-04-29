@@ -46,7 +46,7 @@ abstract class MapAdapter(private val fragment: SupportMapFragment) {
     }
 
     protected val context get() = fragment.requireContext()
-    private val isReady get() = mMap != null && mLayoutAlready
+    private val isReady get() = mMap != null && mLayoutAlready && fragment.isVisible
 
     init {
         fragment.requireView().addOnLayoutChangeListener { _, left, top, right, bottom, _, _, _, _ ->

@@ -17,6 +17,11 @@ abstract class BaseActivity(contentLayoutId: Int) : AppCompatActivity(contentLay
         PermissionChecker(this)
     }
 
+    val preventOpenFromIconApp: Boolean
+        get() = !isTaskRoot
+                && intent.hasCategory(Intent.CATEGORY_LAUNCHER)
+                && Intent.ACTION_MAIN == intent.action
+
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         mResultRegistry.handleActivityResult(requestCode, resultCode, data)

@@ -19,9 +19,10 @@ abstract class VersionTag {
 
     private val FragmentActivity.findRoot: ViewGroup
         get() {
-            var view: View = findViewById<ViewGroup>(android.R.id.content) ?: error("Not found")
+            var view: ViewGroup = findViewById(android.R.id.content) ?: error("Not found")
             while (true) {
-                if (view.parent == null) return view as ViewGroup
+                if (view.parent == null) return view
+                if (view.parent !is ViewGroup) return view
                 view = view.parent as ViewGroup
             }
         }

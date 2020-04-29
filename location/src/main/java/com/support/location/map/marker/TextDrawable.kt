@@ -6,7 +6,8 @@ import android.text.TextPaint
 
 class TextDrawable(
     private val text: String = "",
-    private val textColor: Int = Color.BLACK
+    private val textColor: Int = Color.BLACK,
+    private val textSize:Float = 30f
 ) : Drawable() {
     private var mStartY: Float = 0f
     private var mStartX: Float = 0f
@@ -14,7 +15,7 @@ class TextDrawable(
     private val mTextPaint: TextPaint = TextPaint().apply {
         color = textColor
         isAntiAlias = true
-        textSize = 30f
+        textSize = this@TextDrawable.textSize
     }
 
     override fun onBoundsChange(bounds: Rect) {
