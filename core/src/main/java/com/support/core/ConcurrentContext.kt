@@ -30,10 +30,10 @@ class ConcurrentContext {
 
 class ConcurrentScope(private val context: ConcurrentContext) {
     private var mLaunch: Future<*>? = null
-    private val mTasks = arrayListOf<Promise<*>>()
+    private val mTasks = arrayListOf<Deferred<*>>()
 
-    fun cancel(ignore: PromiseError) = synchronized(this) {
-        mTasks.forEach { if (it != ignore.promise) it.cancel(ignore.error) }
+    fun cancel(ignore: DeferredError) = synchronized(this) {
+        mTasks.forEach { if (it != ignore.deferred) it.cancel(ignore.error) }
     }
 
     fun cancel() = synchronized(this) {
@@ -41,16 +41,16 @@ class ConcurrentScope(private val context: ConcurrentContext) {
         mLaunch?.cancel(true)
     }
 
-    fun <T> task(function: () -> T): Promise<T> = synchronized(this) {
-        Promise(this, function).also { mTasks.add(it) }
+    fun <T> task(function: () -> T): Deferred<T> = synchronized(this) {
+        Deferred(this, function).also { mTasks.add(it) }
     }
 
     fun <T> ConcurrentExecutable<T>.await(): T {
         return execute(this@ConcurrentScope)
     }
 
-    fun remove(promise: Promise<*>) = synchronized(this) {
-        mTasks.remove(promise)
+    fun remove(deferred: Deferred<*>) = synchronized(this) {
+        mTasks.remove(deferred)
         if (mTasks.isEmpty()) {
             mLaunch = null
             context.remove(this)
@@ -124,9 +124,9 @@ class ConcurrentExecutable<T>(private val function: ConcurrentScope.() -> T) {
     }
 }
 
-class PromiseError(val promise: Promise<*>, val error: Throwable)
+class DeferredError(val deferred: Deferred<*>, val error: Throwable)
 
-class Promise<T>(private val scope: ConcurrentScope, function: () -> T) {
+class Deferred<T>(private val scope: ConcurrentScope, function: () -> T) {
 
     private var mScopeError: Throwable? = null
     private val mFuture = asyncIO.submit(Callable<T> {
@@ -134,7 +134,7 @@ class Promise<T>(private val scope: ConcurrentScope, function: () -> T) {
             function()
         } catch (e: Throwable) {
             if (e is InterruptedException || e is CancellationException) throw e
-            scope.cancel(PromiseError(this, e))
+            scope.cancel(DeferredError(this, e))
             throw e
         } finally {
             scope.remove(this)
@@ -161,10 +161,10 @@ class Promise<T>(private val scope: ConcurrentScope, function: () -> T) {
     }
 }
 
-operator fun Promise<out Any>.plus(task: Promise<Unit>): List<Promise<out Any>> {
+operator fun Deferred<out Any>.plus(task: Deferred<Unit>): List<Deferred<out Any>> {
     return arrayListOf(this, task)
 }
 
-fun <E : Promise<out Any>> List<E>.await(): List<Any> {
+fun <E : Deferred<out Any>> List<E>.await(): List<Any> {
     return map { it.await() }
 }

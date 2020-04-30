@@ -133,6 +133,10 @@ infix fun Boolean.invisible(view: View) {
     view.visibility = if (this) View.INVISIBLE else View.VISIBLE
 }
 
+infix fun Boolean.visible(view: View) {
+    view.visibility = if (this) View.VISIBLE else View.INVISIBLE
+}
+
 infix fun Boolean.invisible(views: List<View>) {
     views.forEach { this invisible it }
 }
