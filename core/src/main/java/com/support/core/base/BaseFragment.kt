@@ -8,6 +8,7 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.LifecycleRegistry
+import com.support.core.Dispatcher
 import com.support.core.ResultLifecycle
 import com.support.core.ResultOwner
 import com.support.core.ResultRegistry
@@ -16,7 +17,7 @@ import com.support.core.functional.LocalStore
 import com.support.core.functional.LocalStoreOwner
 
 abstract class BaseFragment(contentLayoutId: Int) : Fragment(contentLayoutId), ResultOwner,
-    LocalStoreOwner {
+    LocalStoreOwner, Dispatcher {
     private val mResultRegistry = ResultRegistry()
     private val visibleRegistry get() = visibleOwner.lifecycle as VisibleLifecycleRegistry
 

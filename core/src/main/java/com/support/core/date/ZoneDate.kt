@@ -35,12 +35,14 @@ class ZoneDate(private val timestampUTC: Long, zone: String) :
             return timestampUTC + zone.rawOffset
         }
 
-        private fun parse(dateStr: String): Date {
-            return try {
-                utcFormat(RESPONSE_TIME_FORMAT_1).parse(dateStr)!!
-            } catch (e: Throwable) {
-                utcFormat(RESPONSE_TIME_FORMAT_2).parse(dateStr)!!
+        private fun parse(dateStr: String, formats: Array<String>): Date {
+            for (format in formats) {
+                try {
+                    return utcFormat(format).parse(dateStr)!!
+                } catch (ignore: Throwable) {
+                }
             }
+            error("Can not parse $dateStr")
         }
 
         private fun utcFormat(format: String) = SimpleDateFormat(format, Locale.US)
@@ -54,8 +56,14 @@ class ZoneDate(private val timestampUTC: Long, zone: String) :
             return ZoneDate(date.time - zoneOffset, zoneName)
         }
 
-        fun fromUTC(dateStr: String, zoneName: String = TimeZone.getDefault().id): ZoneDate {
-            return ZoneDate(parse(dateStr).time, zoneName)
+        fun fromUTC(
+            dateStr: String,
+            zoneName: String = TimeZone.getDefault().id,
+            formats: Array<String> = arrayOf(
+                RESPONSE_TIME_FORMAT_1, RESPONSE_TIME_FORMAT_2
+            )
+        ): ZoneDate {
+            return ZoneDate(parse(dateStr, formats).time, zoneName)
         }
     }
 }

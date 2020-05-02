@@ -149,6 +149,8 @@ interface ViewModelRegistrable : LocalStoreOwner {
     fun onRegistryViewModel(viewModel: BaseViewModel)
 }
 
+class EmptyViewModel : BaseViewModel()
+
 inline fun <reified T : ViewModel> LocalStoreOwner.getViewModel(owner: ViewModelStoreOwner): T {
     return localStore.get("vm:${javaClass.simpleName}:${owner.javaClass.simpleName}") {
         owner.getViewModel()

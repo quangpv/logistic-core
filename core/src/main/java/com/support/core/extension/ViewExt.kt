@@ -129,6 +129,15 @@ fun View.showOrInvisible(b: Boolean, function: () -> Unit) {
     } else View.INVISIBLE
 }
 
+fun List<View>.showOrGone(b: Boolean, function: () -> Unit) {
+    forEach {
+        it.visibility = if (b) {
+            function()
+            View.VISIBLE
+        } else View.GONE
+    }
+}
+
 infix fun Boolean.invisible(view: View) {
     view.visibility = if (this) View.INVISIBLE else View.VISIBLE
 }

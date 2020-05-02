@@ -12,6 +12,9 @@ val LatLng.location: Location
         it.longitude = longitude
     }
 
+val LatLng.isEmpty: Boolean
+    get() = latitude == 0.0 && longitude == 0.0
+
 fun List<LatLng>.findNearestIndex(pos: LatLng): Int {
     var nearestPoint: LatLng = first()
     var nearestDistance: Float = Float.MAX_VALUE

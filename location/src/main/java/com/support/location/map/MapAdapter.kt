@@ -37,6 +37,7 @@ abstract class MapAdapter(private val fragment: SupportMapFragment) {
 
     private val handler = Handler()
     private var mLocationMarker: Marker? = null
+    val view get() = fragment.requireView()
 
     private var mOnLocationUpdateListener = object : OnLocationUpdateListener {
         override fun onLocationUpdated(location: Location) {
