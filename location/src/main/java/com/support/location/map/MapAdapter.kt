@@ -16,6 +16,7 @@ import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.*
 import com.support.location.engine.LocationEngine
 import com.support.location.engine.OnLocationUpdateListener
+import com.support.location.isEmpty
 import com.support.location.latLng
 import com.support.location.location
 import com.support.location.map.marker.CircleDrawable
@@ -28,6 +29,8 @@ abstract class MapAdapter(private val fragment: SupportMapFragment) {
     }
 
     protected open val shouldUseBearing: Boolean get() = false
+    protected open val shouldUseMarkerMyLocation: Boolean get() = true
+
     val hasLocationEngine: Boolean get() = mEngine != null
 
     private var mLayoutAlready = false
@@ -103,7 +106,8 @@ abstract class MapAdapter(private val fragment: SupportMapFragment) {
     }
 
     fun setMyLocation(latLng: LatLng) = launch {
-        if (latLng.latitude == 0.0 && latLng.longitude == 0.0) return@launch
+        if (!shouldUseMarkerMyLocation) return@launch
+        if (latLng.isEmpty) return@launch
         if (mLocationMarker == null) {
             mLocationMarker = it.addMarker(
                     MarkerOptions()

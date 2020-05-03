@@ -15,6 +15,7 @@ interface PostAble<in T> {
 
 interface PromisePostAble<in T> : PostAble<T> {
     fun postError(e: Throwable)
+    val error: Subscriber<Throwable>
 }
 
 open class Subscriber<T> : MutableLiveData<T>(), PostAble<T> {
@@ -56,7 +57,7 @@ open class Subscriber<T> : MutableLiveData<T>(), PostAble<T> {
 }
 
 class Promise<T> : Subscriber<T>(), PromisePostAble<T> {
-    val error = Subscriber<Throwable>()
+    override val error = Subscriber<Throwable>()
 
     override fun postError(e: Throwable) {
         error.post(e)
