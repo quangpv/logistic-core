@@ -11,7 +11,7 @@ class MultipleBoldSpan(
 ) : MultipleSpanText {
     private val mText = text
 
-    override val spans = mText.mapNotNull { if (it.isEmpty()) null else ItemSpan(it) }
+    override val spans = mText.mapNotNull { if (it.isBlank()) null else ItemSpan(it) }
 
     inner class ItemSpan(val it: String) : SpanText {
         override val textView: TextView

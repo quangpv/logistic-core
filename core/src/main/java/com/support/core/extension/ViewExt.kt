@@ -115,7 +115,7 @@ infix fun Boolean.show(views: List<View>) {
     views.forEach { this show it }
 }
 
-fun View.show(b: Boolean, function: () -> Unit) {
+fun <T : View> T.show(b: Boolean, function: T.() -> Unit) {
     visibility = if (b) {
         function()
         View.VISIBLE
