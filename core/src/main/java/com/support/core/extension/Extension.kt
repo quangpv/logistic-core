@@ -26,6 +26,10 @@ fun Boolean?.safe(def: Boolean = false): Boolean {
     return this ?: def
 }
 
+fun String.sub(start: Int, end: Int): String {
+    return substring(start, if (length < end) length else end)
+}
+
 fun <T> lazyNone(initializer: () -> T) = lazy(LazyThreadSafetyMode.NONE, initializer)
 
 fun <T> tryCall(function: () -> T): Pair<T?, Throwable?> {
