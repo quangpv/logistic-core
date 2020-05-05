@@ -7,7 +7,7 @@ import androidx.lifecycle.ViewModel
 @Target(AnnotationTarget.CLASS)
 @Retention(AnnotationRetention.RUNTIME)
 annotation class Inject(
-    val singleton: Boolean = false
+        val singleton: Boolean = false
 )
 
 interface Bean<T> {
@@ -23,8 +23,8 @@ interface Scope {
 }
 
 private open class SimpleBean<T>(
-    val isSingleton: Boolean,
-    val function: () -> T
+        val isSingleton: Boolean,
+        val function: () -> T
 ) : Bean<T> {
     private var mValue: T? = null
 
@@ -53,8 +53,7 @@ private class ScopeBean<T>(private val function: () -> T) : Bean<T> {
     }
 }
 
-private class SimpleScope(private val context: DependenceContext) :
-    Scope {
+private class SimpleScope(private val context: DependenceContext) : Scope {
     private val mBean = hashMapOf<Class<*>, ScopeBean<*>>()
 
     override fun contains(clazz: Class<*>): Boolean {
@@ -79,8 +78,7 @@ private class SimpleScope(private val context: DependenceContext) :
     }
 }
 
-private class ApplicationBean(application: Application) :
-    Bean<Application> {
+private class ApplicationBean(application: Application) : Bean<Application> {
     override val value: Application = application
 }
 
@@ -110,8 +108,18 @@ abstract class ProvideContext {
 
     abstract fun <T> getOrNull(clazz: Class<T>): T?
 
+    abstract fun <T> getOrNull(scopeId: String, clazz: Class<T>): T?
+
     fun <T> get(clazz: Class<T>): T {
         return getOrNull(clazz) ?: error("Not found bean ${clazz.simpleName}")
+    }
+
+    fun <T> get(scopeId: String, clazz: Class<T>): T {
+        return getOrNull(scopeId, clazz) ?: error("Not found bean ${clazz.simpleName}")
+    }
+
+    inline fun <reified T> get(scopeId: String): T {
+        return get(scopeId, T::class.java)
     }
 
     inline fun <reified T> get(): T {
@@ -164,11 +172,15 @@ class DependenceContext : ProvideContext() {
     fun <T> lookup(clazz: Class<T>): Bean<T> {
         if (!mBean.containsKey(clazz)) {
             if (clazz.isAssignableFrom(Application::class.java)
-                || clazz.isAssignableFrom(Context::class.java)
+                    || clazz.isAssignableFrom(Context::class.java)
             ) return mApplication as Bean<T>
             reflectProvideIfNeeded(clazz)
         }
         return getBean(clazz) as Bean<T>
+    }
+
+    fun <T> lookup(scopeId: String, clazz: Class<T>): Bean<T> {
+        return getScope(scopeId).lookup(clazz)
     }
 
     private fun <T> reflectProvideIfNeeded(clazz: Class<T>) {
@@ -179,7 +191,7 @@ class DependenceContext : ProvideContext() {
 
             else -> {
                 val annotation = clazz.getAnnotation(Inject::class.java)
-                    ?: error("Not found provider for ${clazz.simpleName}")
+                        ?: error("Not found provider for ${clazz.simpleName}")
                 if (annotation.singleton) single(clazz) {
                     create(clazz)
                 } else factory(clazz) {
@@ -189,19 +201,19 @@ class DependenceContext : ProvideContext() {
         }
     }
 
-    fun <T> lookupByScope(scopeId: String, clazz: Class<T>): T {
-        return getScope(scopeId).lookup(clazz).value
-    }
-
     override fun <T> getOrNull(clazz: Class<T>): T? {
         return (lookup(clazz) as? Bean<T>)?.value
+    }
+
+    override fun <T> getOrNull(scopeId: String, clazz: Class<T>): T? {
+        return lookup(scopeId, clazz).value
     }
 
     @Suppress("unchecked_cast")
     fun <T> create(clazz: Class<T>): T {
         val constructor = clazz.constructors.firstOrNull()
-            ?: clazz.declaredConstructors.firstOrNull()
-            ?: error("Not found constructor for ${clazz.simpleName}")
+                ?: clazz.declaredConstructors.firstOrNull()
+                ?: error("Not found constructor for ${clazz.simpleName}")
 
         val paramTypes = constructor.genericParameterTypes
         return constructor.newInstance(*paramTypes.map { lookup(it as Class<*>).value }.toTypedArray()) as T
@@ -210,8 +222,8 @@ class DependenceContext : ProvideContext() {
 }
 
 class Module(
-    private val context: DependenceContext,
-    private val provide: (DependenceContext) -> Unit
+        private val context: DependenceContext,
+        private val provide: (DependenceContext) -> Unit
 ) : ProvideContext() {
     private var mModules: Array<out Module>? = null
 
@@ -239,6 +251,10 @@ class Module(
         return context.getOrNull(clazz)
     }
 
+    override fun <T> getOrNull(scopeId: String, clazz: Class<T>): T? {
+        return context.getOrNull(scopeId, clazz)
+    }
+
     fun provide() {
         mModules?.forEach { it.provide() }
         provide(context)
@@ -251,6 +267,10 @@ fun module(function: ProvideContext.() -> Unit): Module {
 
 inline fun <reified T> inject() = lazy(LazyThreadSafetyMode.NONE) {
     dependenceContext.get(T::class.java)
+}
+
+inline fun <reified T> inject(scopeId: String) = lazy(LazyThreadSafetyMode.NONE) {
+    dependenceContext.get(scopeId, T::class.java)
 }
 
 val dependenceContext = DependenceContext()
