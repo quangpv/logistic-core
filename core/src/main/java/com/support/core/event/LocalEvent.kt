@@ -38,12 +38,7 @@ class LocalEvent<T> : Event<T> {
     }
 
     override fun observe(owner: LifecycleOwner, function: (T?) -> Unit) {
-        val lifeOwner = when (owner) {
-            is BaseFragment -> owner.visibleOwner
-            is Fragment -> owner.viewLifecycleOwner
-            else -> owner
-        }
-        observe(lifeOwner, Observer { function(it) })
+        observe(owner, Observer { function(it) })
     }
 
     fun observeNotNull(owner: LifecycleOwner, function: (T) -> Unit) {
@@ -51,7 +46,12 @@ class LocalEvent<T> : Event<T> {
     }
 
     fun observe(owner: LifecycleOwner, observer: Observer<T>) {
-        mObservers[observer] = LifeObserver(owner, observer).apply { onAttached() }
+        val lifeOwner = when (owner) {
+            is BaseFragment -> owner.visibleOwner
+            is Fragment -> owner.viewLifecycleOwner
+            else -> owner
+        }
+        mObservers[observer] = LifeObserver(lifeOwner, observer).apply { onAttached() }
     }
 
     fun observeForever(observer: Observer<T>) {
