@@ -26,6 +26,8 @@
         android:textColor="@android:color/black"
         android:textColorHint="@android:color/darker_gray" />
 
+    <View style="@style/Divider.Horizontal" />
+
     <ListView
         android:id="@+id/rvLanguage"
         android:layout_width="match_parent"

@@ -13,7 +13,8 @@ import com.support.core.phone.IPhoneCode
 import kotlinx.android.synthetic.main.dialog_phone_code_picker.*
 import kotlinx.android.synthetic.main.item_view_phone_code.view.*
 
-class PhoneCodePickerDialog(context: Context, val style: Int = R.style.PhoneCodeTheme) : Dialog(context, style) {
+class PhoneCodePickerDialog(context: Context, val style: Int = R.style.PhoneCodeTheme) :
+    Dialog(context, style) {
     private var mAdapter: Adapter
     private var mCallback: (IPhoneCode) -> Unit = {}
     private var mItems: List<IPhoneCode> = emptyList()
