@@ -20,10 +20,7 @@ import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 
 
-class GooglePlace(context: Context, key: String) {
-    init {
-        Places.initialize(context, key)
-    }
+class GooglePlace(context: Context) {
 
     private var mLastTask: Task<FindAutocompletePredictionsResponse>? = null
     private val mPlacesClient = Places.createClient(context)

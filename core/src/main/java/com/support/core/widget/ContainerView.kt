@@ -10,6 +10,8 @@ import android.view.View
 import android.widget.FrameLayout
 import androidx.annotation.LayoutRes
 import com.support.core.R
+import com.support.core.extension.gone
+import com.support.core.extension.show
 
 interface Visible {
     fun enter(view: View) {}
@@ -87,7 +89,7 @@ class ContainerView @JvmOverloads constructor(
         context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0
 ) : FrameLayout(context, attrs, defStyleAttr) {
     private var mVisible: Visible = DefaultVisible()
-    private var mVisibleId: Int = 0
+    private var mVisibleId: Int = Int.MAX_VALUE
     private val mViewCache = hashMapOf<Int, View>()
 
     init {
@@ -175,5 +177,24 @@ class ContainerView @JvmOverloads constructor(
 
     private fun onCreateView(layoutId: Int): View {
         return LayoutInflater.from(context).inflate(layoutId, this, false)
+    }
+
+    fun replace(@LayoutRes layoutId: Int, id: Int): View? {
+        if (layoutId == 0) return null
+        if (mVisibleId == id) return null
+        mViewCache[mVisibleId]?.also {
+            it.gone()
+        }
+
+        if (mViewCache.containsKey(id)) {
+            mViewCache[id]?.show()
+            mVisibleId = id
+        } else {
+            val view = onCreateView(layoutId).also { mViewCache[id] = it }
+            addView(view)
+            view.show()
+            mVisibleId = id
+        }
+        return mViewCache[id]
     }
 }
