@@ -33,6 +33,7 @@ abstract class BaseFragment(contentLayoutId: Int) : Fragment(contentLayoutId), R
     override fun onDestroyView() {
         super.onDestroyView()
         visibleRegistry.destroy()
+        localStore.clear()
     }
 
     override fun onStart() {
@@ -53,11 +54,6 @@ abstract class BaseFragment(contentLayoutId: Int) : Fragment(contentLayoutId), R
     override fun onPause() {
         super.onPause()
         visibleRegistry.pause()
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-        localStore.clear()
     }
 
     override fun onHiddenChanged(hidden: Boolean) {
