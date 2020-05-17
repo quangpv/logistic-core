@@ -24,17 +24,18 @@ class CircleDrawable(
     }
 
     override fun onBoundsChange(bounds: Rect) {
+        val shadowRadius = shadow?.radius?.toInt() ?: 0
         child?.setBounds(
-            bounds.left + padding,
-            bounds.top + padding,
-            bounds.right - padding,
-            bounds.bottom - padding
+            bounds.left + shadowRadius + padding,
+            bounds.top + shadowRadius + padding,
+            bounds.right - shadowRadius - padding,
+            bounds.bottom - shadowRadius - padding
         )
         mClipPath.reset()
         mClipPath.addCircle(
             bounds.centerX().toFloat(),
             bounds.centerY().toFloat(),
-            bounds.width().toFloat() / 2 - (shadow?.radius ?: 0f),
+            bounds.width().toFloat() / 2 - shadowRadius,
             Path.Direction.CW
         )
     }
