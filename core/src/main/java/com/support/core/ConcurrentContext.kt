@@ -165,6 +165,6 @@ operator fun Deferred<out Any>.plus(task: Deferred<Unit>): List<Deferred<out Any
     return arrayListOf(this, task)
 }
 
-fun <E : Deferred<out Any>> List<E>.await(): List<Any> {
+fun <T, E : Deferred<T>> List<E>.await(): List<T> {
     return map { it.await() }
 }

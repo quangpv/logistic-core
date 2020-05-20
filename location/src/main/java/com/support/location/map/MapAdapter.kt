@@ -4,6 +4,7 @@ import android.graphics.drawable.Drawable
 import android.location.Location
 import android.os.Handler
 import android.os.SystemClock
+import android.util.Log
 import android.view.animation.LinearInterpolator
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.drawable.toBitmap
@@ -20,6 +21,7 @@ import com.support.location.isEmpty
 import com.support.location.latLng
 import com.support.location.location
 import com.support.location.map.marker.CircleDrawable
+import java.util.*
 
 
 abstract class MapAdapter(private val fragment: SupportMapFragment) {
@@ -53,12 +55,13 @@ abstract class MapAdapter(private val fragment: SupportMapFragment) {
     private val isReady get() = mMap != null && mLayoutAlready && fragment.isVisible
 
     init {
-        fragment.requireView().addOnLayoutChangeListener { _, left, top, right, bottom, _, _, _, _ ->
-            if (!mLayoutAlready) {
-                mLayoutAlready = right > left && bottom > top
-                notifyMapLoadedIfCan()
+        fragment.requireView()
+            .addOnLayoutChangeListener { _, left, top, right, bottom, _, _, _, _ ->
+                if (!mLayoutAlready) {
+                    mLayoutAlready = right > left && bottom > top
+                    notifyMapLoadedIfCan()
+                }
             }
-        }
         fragment.getMapAsync {
             mMap = it
             mMap!!.setOnMapLoadedCallback {
@@ -110,11 +113,11 @@ abstract class MapAdapter(private val fragment: SupportMapFragment) {
         if (latLng.isEmpty) return@launch
         if (mLocationMarker == null) {
             mLocationMarker = it.addMarker(
-                    MarkerOptions()
-                            .flat(true)
-                            .icon(onCreateMyLocationIcon())
-                            .anchor(0.5f, 0.5f)
-                            .position(latLng)
+                MarkerOptions()
+                    .flat(true)
+                    .icon(onCreateMyLocationIcon())
+                    .anchor(0.5f, 0.5f)
+                    .position(latLng)
             )
             onMyLocationFirstDetected(latLng.location)
         } else mLocationMarker!!.position = latLng
@@ -157,7 +160,7 @@ abstract class MapAdapter(private val fragment: SupportMapFragment) {
 
     protected open fun onCreateMyLocationIcon(): BitmapDescriptor {
         return BitmapDescriptorFactory
-                .fromBitmap(CircleDrawable().toBitmap(100, 100))
+            .fromBitmap(CircleDrawable().toBitmap(100, 100))
     }
 
     fun getDimen(id: Int): Int {
