@@ -38,6 +38,14 @@ interface MultipleSpanText : ISpannable {
     val spans: List<SpanText>
 
     override fun apply() = block(textView) {
+        if (spanText.isBlank()) {
+            text = ""
+            return@block
+        }
+        if (spans.isEmpty()) {
+            text = spanText
+            return@block
+        }
         val span = SpannableString(spanText)
         spans.forEach {
             val start = span.indexOf(it.spanAtText)
