@@ -80,7 +80,7 @@ class LastLocationEngine(
             }
         })
         if (result != null) return result!!
-        mLock.withLock { mCondition.await(60, TimeUnit.SECONDS) }
+        mLock.withLock { mCondition.await(10, TimeUnit.SECONDS) }
         return result ?: mLastLocation?.latLng ?: loader.options.default
     }
 
