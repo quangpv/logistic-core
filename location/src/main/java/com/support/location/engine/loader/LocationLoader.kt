@@ -4,7 +4,7 @@ import android.content.Context
 import com.support.location.engine.LocationOptions
 import com.support.location.engine.OnLocationUpdateListener
 
-abstract class LocationLoader(val next: LocationLoader?) {
+abstract class LocationLoader(val next: LocationLoader?, val options: LocationOptions) {
     companion object {
         fun getDefault(context: Context, options: LocationOptions = LocationOptions.DEFAULT): LocationLoader {
             return FusedLoader(context, NetworkLoader(context, GPSLoader(context, options = options), options), options)

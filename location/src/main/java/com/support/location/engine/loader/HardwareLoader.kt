@@ -11,9 +11,9 @@ import com.support.location.engine.OnLocationUpdateListener
 
 abstract class HardwareLoader(
         context: Context,
-        private val options: LocationOptions,
+        options: LocationOptions,
         next: LocationLoader?
-) : LocationLoader(next) {
+) : LocationLoader(next,options) {
     private val mCallbacks = hashMapOf<OnLocationUpdateListener, ILocationListener>()
     private val mLocationManager = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
     private var mLastLocationCallback: ILocationListener? = null

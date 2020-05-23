@@ -14,8 +14,8 @@ import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 
 class LastLocationEngine(
-        private val context: Context,
-        private val loader: LocationLoader = LocationLoader.getDefault(context)
+    private val context: Context,
+    private val loader: LocationLoader = LocationLoader.getDefault(context)
 ) : LocationEngine {
     companion object {
         const val TIME_TO_UPDATE = 5000L
@@ -51,19 +51,20 @@ class LastLocationEngine(
 
     @SuppressLint("RestrictedApi")
     @RequiresPermission(Manifest.permission.ACCESS_COARSE_LOCATION)
-    fun loadLastLocation(function: OnLocationUpdateListener) = ArchTaskExecutor.getInstance().executeOnMainThread {
-        if (System.currentTimeMillis() - mLastUpdate < TIME_TO_UPDATE && mLastLocation != null) {
-            function.onLocationUpdated(mLastLocation!!)
-            return@executeOnMainThread
-        }
-        loader.loadLastLocation(object : OnLocationUpdateListener {
-            override fun onLocationUpdated(location: Location) {
-                mLastLocation = location
-                mLastUpdate = System.currentTimeMillis()
-                function.onLocationUpdated(location)
+    fun loadLastLocation(function: OnLocationUpdateListener) =
+        ArchTaskExecutor.getInstance().executeOnMainThread {
+            if (System.currentTimeMillis() - mLastUpdate < TIME_TO_UPDATE && mLastLocation != null) {
+                function.onLocationUpdated(mLastLocation!!)
+                return@executeOnMainThread
             }
-        })
-    }
+            loader.loadLastLocation(object : OnLocationUpdateListener {
+                override fun onLocationUpdated(location: Location) {
+                    mLastLocation = location
+                    mLastUpdate = System.currentTimeMillis()
+                    function.onLocationUpdated(location)
+                }
+            })
+        }
 
     fun getLastLocation(function: OnLocationUpdateListener) {
         loader.getLastLocation(function)
@@ -80,7 +81,7 @@ class LastLocationEngine(
         })
         if (result != null) return result!!
         mLock.withLock { mCondition.await(10, TimeUnit.SECONDS) }
-        return result ?: mLastLocation?.latLng ?: LatLng(0.0, 0.0)
+        return result ?: mLastLocation?.latLng ?: loader.options.default
     }
 
 }

@@ -10,7 +10,7 @@ import com.support.location.engine.OnLocationUpdateListener
 
 class FusedLoader(context: Context,
                   next: LocationLoader? = null,
-                  options: LocationOptions = LocationOptions.DEFAULT) : LocationLoader(next) {
+                  options: LocationOptions = LocationOptions.DEFAULT) : LocationLoader(next,options) {
     private val mCallbacks = hashMapOf<OnLocationUpdateListener, LocationCallback>()
     private val mFusedLocationClient = LocationServices.getFusedLocationProviderClient(context)
 
