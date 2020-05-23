@@ -7,10 +7,14 @@ import com.google.android.gms.location.LocationResult
 import com.google.android.gms.location.LocationServices
 import com.support.location.engine.LocationOptions
 import com.support.location.engine.OnLocationUpdateListener
+import com.support.location.isGPSEnabled
+import com.support.location.location
 
-class FusedLoader(context: Context,
-                  next: LocationLoader? = null,
-                  options: LocationOptions = LocationOptions.DEFAULT) : LocationLoader(next,options) {
+class FusedLoader(
+    context: Context,
+    next: LocationLoader? = null,
+    options: LocationOptions = LocationOptions.DEFAULT
+) : LocationLoader(context, next, options) {
     private val mCallbacks = hashMapOf<OnLocationUpdateListener, LocationCallback>()
     private val mFusedLocationClient = LocationServices.getFusedLocationProviderClient(context)
 
@@ -22,6 +26,23 @@ class FusedLoader(context: Context,
     }
 
     override fun loadLastLocation(listener: OnLocationUpdateListener) {
+
+        if (!context.isGPSEnabled) {
+            if (next == null) {
+                listener.onLocationUpdated(options.default.location)
+                return
+            }
+            mFusedLocationClient.lastLocation.addOnSuccessListener {
+                if (it != null) listener.onLocationUpdated(it)
+                else next.loadLastLocation(listener)
+            }.addOnCanceledListener {
+                next.loadLastLocation(listener)
+            }.addOnFailureListener {
+                next.loadLastLocation(listener)
+            }
+            return
+        }
+
         mFusedLocationClient.requestLocationUpdates(mLocationRequest, object : LocationCallback() {
             override fun onLocationResult(p0: LocationResult?) {
                 mFusedLocationClient.removeLocationUpdates(this)
@@ -32,6 +53,8 @@ class FusedLoader(context: Context,
                 }
             }
         }, null).addOnCanceledListener {
+            next?.loadLastLocation(listener)
+        }.addOnFailureListener {
             next?.loadLastLocation(listener)
         }
     }

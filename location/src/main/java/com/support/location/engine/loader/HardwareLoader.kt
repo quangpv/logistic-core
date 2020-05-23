@@ -8,12 +8,14 @@ import android.location.LocationManager
 import android.os.Bundle
 import com.support.location.engine.LocationOptions
 import com.support.location.engine.OnLocationUpdateListener
+import com.support.location.isGPSEnabled
+import com.support.location.location
 
 abstract class HardwareLoader(
         context: Context,
         options: LocationOptions,
         next: LocationLoader?
-) : LocationLoader(next,options) {
+) : LocationLoader(context, next, options) {
     private val mCallbacks = hashMapOf<OnLocationUpdateListener, ILocationListener>()
     private val mLocationManager = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
     private var mLastLocationCallback: ILocationListener? = null
@@ -26,7 +28,7 @@ abstract class HardwareLoader(
     @SuppressLint("MissingPermission")
     override fun loadLastLocation(listener: OnLocationUpdateListener) {
         if (!mLocationManager.isProviderEnabled(provider)) {
-            next?.loadLastLocation(listener)
+            doNextIfNeeded(listener)
             return
         }
         val location = mLocationManager.getLastKnownLocation(provider)
@@ -46,6 +48,14 @@ abstract class HardwareLoader(
 
         mLocationManager.removeUpdates(mLastLocationCallback!!)
         mLocationManager.requestLocationUpdates(provider, options.interval, options.minDistance, mLastLocationCallback!!)
+    }
+
+    private fun doNextIfNeeded(listener: OnLocationUpdateListener) {
+        if (!context.isGPSEnabled) {
+            if (next == null) {
+                listener.onLocationUpdated(options.default.location)
+            } else next.loadLastLocation(listener)
+        }
     }
 
     override fun getLastLocation(function: OnLocationUpdateListener) {
