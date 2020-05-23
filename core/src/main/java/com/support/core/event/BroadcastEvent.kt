@@ -5,16 +5,16 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.os.Parcelable
+import androidx.fragment.app.Fragment
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.OnLifecycleEvent
+import com.support.core.base.BaseFragment
 import java.io.Serializable
-import java.util.*
 
-class BroadcastEvent(private val context: Context) : Event<Any> {
-    private val uuid = UUID.randomUUID().toString()
-
+class BroadcastEvent(val context: Context, uuid: String) :
+    BaseBroadcastEvent<Any>(context, uuid) {
     override fun set(value: Any?) {
         context.sendBroadcast(Intent(uuid).also {
             when (value) {
@@ -25,8 +25,51 @@ class BroadcastEvent(private val context: Context) : Event<Any> {
         })
     }
 
-    override fun observe(owner: LifecycleOwner, function: (Any?) -> Unit) {
-        var data: Any? = null
+    override fun shouldNotify(intent: Intent?): Boolean {
+        return intent != null
+    }
+
+    override fun convert(intent: Intent?): Any? {
+        return intent?.extras?.get(uuid)
+    }
+}
+
+abstract class BaseBroadcastEvent<T>(private val context: Context, val uuid: String) : Event<T> {
+
+    override fun set(value: T?) {
+        error("Not support!")
+    }
+
+    fun subscribe(owner: LifecycleOwner, function: (T?) -> Unit) {
+        observe(
+            when (owner) {
+                is BaseFragment -> owner.visibleOwner
+                is Fragment -> owner.viewLifecycleOwner
+                else -> owner
+            }, function
+        )
+    }
+
+    fun subscribeNotNull(owner: LifecycleOwner, function: (T) -> Unit) {
+        observe(
+            when (owner) {
+                is BaseFragment -> owner.visibleOwner
+                is Fragment -> owner.viewLifecycleOwner
+                else -> owner
+            }
+        ) {
+            if (it != null) function(it)
+        }
+    }
+
+    fun observeNotNull(owner: LifecycleOwner, function: (T) -> Unit) {
+        observe(owner) {
+            if (it != null) function(it)
+        }
+    }
+
+    override fun observe(owner: LifecycleOwner, function: (T?) -> Unit) {
+        var data: T? = null
         var shouldNotify = false
 
         fun notifyIfNeeded() = synchronized(this) {
@@ -39,13 +82,13 @@ class BroadcastEvent(private val context: Context) : Event<Any> {
 
         val receiver = object : BroadcastReceiver() {
             override fun onReceive(context: Context?, intent: Intent?) {
-                intent ?: return
-                data = intent.extras?.get(uuid)
+                if (!shouldNotify(intent)) return
+                data = convert(intent)
                 shouldNotify = true
                 notifyIfNeeded()
-
             }
         }
+
         owner.lifecycle.addObserver(object : LifecycleObserver {
             @OnLifecycleEvent(Lifecycle.Event.ON_DESTROY)
             fun onDestroy() {
@@ -65,4 +108,6 @@ class BroadcastEvent(private val context: Context) : Event<Any> {
         context.registerReceiver(receiver, IntentFilter(uuid))
     }
 
+    protected open fun shouldNotify(intent: Intent?): Boolean = true
+    protected abstract fun convert(intent: Intent?): T?
 }

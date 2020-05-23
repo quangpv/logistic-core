@@ -11,14 +11,17 @@ import androidx.appcompat.app.AlertDialog
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.support.core.base.BaseActivity
+import com.support.core.extension.safe
 
 
 open class PermissionChecker(private val activity: BaseActivity) {
 
     private var mOpenSettingDialog: AlertDialog? = null
+    private var mRechecked = hashMapOf<String, Int>()
 
     protected open var titleDenied = "Permission denied"
     protected open var messageDenied = "You need to allow permission to use this feature"
+
 
     fun access(vararg permissions: String, onAccess: () -> Unit) {
         check(*permissions) { if (it) onAccess() }
@@ -26,11 +29,47 @@ open class PermissionChecker(private val activity: BaseActivity) {
 
     fun check(vararg permissions: String, onPermission: (Boolean) -> Unit) {
         if (permissions.isEmpty()) throw RuntimeException("No permission to check")
-        if (isAllowed(*permissions)) onPermission(true) else {
-            if (ActivityCompat.shouldShowRequestPermissionRationale(activity, permissions[0]))
-                showSuggestOpenSetting(permissions, onPermission)
-            else request(permissions, onPermission)
+
+        if (isAllAllowed(*permissions)) {
+            onPermission(true)
+            return
         }
+
+        if (isAnyAllowed(*permissions)) {
+            if (hasRecheck(permissions)) {
+                onPermission(true)
+                return
+            }
+
+            if (permissions.any {
+                    !ActivityCompat.shouldShowRequestPermissionRationale(activity, it)
+                }) {
+                onPermission(true)
+                return
+            }
+
+        }
+
+        if (shouldShowSettings(permissions)) {
+            showSuggestOpenSetting(permissions, onPermission)
+        } else {
+            request(permissions, onPermission)
+            val key = permissions[0]
+            mRechecked[key] = mRechecked[key].safe() + 1
+        }
+    }
+
+    private fun shouldShowSettings(permissions: Array<out String>): Boolean {
+        return ActivityCompat.shouldShowRequestPermissionRationale(activity, permissions.first())
+                || hasRecheck(permissions)
+    }
+
+    private fun clearRechecked(permissions: Array<out String>) {
+        mRechecked.remove(permissions[0])
+    }
+
+    private fun hasRecheck(permissions: Array<out String>): Boolean {
+        return mRechecked[permissions[0]].safe() > 1
     }
 
     private fun request(permissions: Array<out String>, onPermission: (Boolean) -> Unit) {
@@ -47,6 +86,7 @@ open class PermissionChecker(private val activity: BaseActivity) {
                 }
             }
             onPermission(true)
+            clearRechecked(permissions)
         }
         ActivityCompat.requestPermissions(activity, permissions, requestCode)
     }
@@ -55,12 +95,15 @@ open class PermissionChecker(private val activity: BaseActivity) {
         return permissions.hashCode() and 0xffff
     }
 
-    private fun isAllowed(vararg permissions: String): Boolean {
-        return permissions.fold(true) { acc, permission ->
-            acc && ContextCompat.checkSelfPermission(
-                activity,
-                permission
-            ) == PackageManager.PERMISSION_GRANTED
+    private fun isAnyAllowed(vararg permissions: String): Boolean {
+        return permissions.any {
+            ContextCompat.checkSelfPermission(activity, it) == PackageManager.PERMISSION_GRANTED
+        }
+    }
+
+    private fun isAllAllowed(vararg permissions: String): Boolean {
+        return permissions.all {
+            ContextCompat.checkSelfPermission(activity, it) == PackageManager.PERMISSION_GRANTED
         }
     }
 
@@ -87,7 +130,9 @@ open class PermissionChecker(private val activity: BaseActivity) {
         )
         val requestCode = requestCodeOf(permissions)
         activity.resultLife.onActivityResult(requestCode) { _, _ ->
-            onPermission(isAllowed(*permissions))
+            val isAllowed = isAnyAllowed(*permissions)
+            onPermission(isAllowed)
+            if (isAllowed) clearRechecked(permissions)
         }
         activity.startActivityForResult(intent, requestCode)
     }
