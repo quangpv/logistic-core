@@ -84,7 +84,7 @@ val Fragment.isVisibleOnScreen: Boolean
 val Fragment.childVisible
     get() = childFragmentManager.fragments
             .find {
-                (!it.isHidden) &&
-                        (((it as? BaseFragment)?.visibleOwner?.lifecycle as? CurrentResumeLifecycleRegistry)?.isActivated
-                                ?: true)
+                val isActivated = ((it as? BaseFragment)?.visibleOwner?.lifecycle
+                        as? CurrentResumeLifecycleRegistry)?.isActivated ?: true
+                !it.isHidden && isActivated
             }
