@@ -12,7 +12,7 @@ import com.support.core.functional.LocalStore
 import com.support.core.functional.LocalStoreOwner
 
 abstract class BaseFragment(contentLayoutId: Int) : Fragment(contentLayoutId), ResultOwner,
-    LocalStoreOwner, Dispatcher {
+        LocalStoreOwner, Dispatcher {
     private val mResultRegistry = ResultRegistry()
     private val visibleRegistry get() = visibleOwner.lifecycle as ViewLifecycleRegistry
 
@@ -57,8 +57,8 @@ abstract class BaseFragment(contentLayoutId: Int) : Fragment(contentLayoutId), R
     }
 
     override fun onHiddenChanged(hidden: Boolean) {
-        val registry = visibleRegistry as? VisibleLifecycleRegistry ?: return
-        registry.hide(hidden)
+        childVisible?.onHiddenChanged(hidden)
+        visibleRegistry.hide(hidden)
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
@@ -67,12 +67,24 @@ abstract class BaseFragment(contentLayoutId: Int) : Fragment(contentLayoutId), R
     }
 
     override fun onRequestPermissionsResult(
-        requestCode: Int,
-        permissions: Array<out String>,
-        grantResults: IntArray
+            requestCode: Int,
+            permissions: Array<out String>,
+            grantResults: IntArray
     ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         mResultRegistry.handlePermissionsResult(requestCode, permissions, grantResults)
     }
 
 }
+
+
+val Fragment.isVisibleOnScreen: Boolean
+    get() = !isHidden && (parentFragment?.isVisibleOnScreen ?: true)
+
+val Fragment.childVisible
+    get() = childFragmentManager.fragments
+            .find {
+                (!it.isHidden) &&
+                        (((it as? BaseFragment)?.visibleOwner?.lifecycle as? CurrentResumeLifecycleRegistry)?.isActivated
+                                ?: true)
+            }
