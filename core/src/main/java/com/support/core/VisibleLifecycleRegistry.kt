@@ -5,6 +5,8 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.LifecycleRegistry
+import com.support.core.base.BaseFragment
+import com.support.core.base.childVisible
 import com.support.core.base.isVisibleOnScreen
 
 abstract class ViewLifecycleRegistry(provider: LifecycleOwner) : LifecycleRegistry(provider) {
@@ -22,6 +24,11 @@ abstract class ViewLifecycleRegistry(provider: LifecycleOwner) : LifecycleRegist
     abstract fun pause()
 
     abstract fun hide(hidden: Boolean)
+
+    protected fun Fragment.dispatchHidden(hidden: Boolean) {
+        ((childVisible as? BaseFragment)?.visibleOwner?.lifecycle as? ViewLifecycleRegistry)
+                ?.hide(hidden)
+    }
 }
 
 class VisibleLifecycleRegistry(provider: LifecycleOwner, private val fragment: Fragment) :
@@ -72,6 +79,8 @@ class VisibleLifecycleRegistry(provider: LifecycleOwner, private val fragment: F
     }
 
     override fun hide(hidden: Boolean) {
+        fragment.dispatchHidden(hidden)
+
         if (hidden) {
             next(STATE_PAUSED)
             next(STATE_STOPPED)
@@ -84,7 +93,7 @@ class VisibleLifecycleRegistry(provider: LifecycleOwner, private val fragment: F
     private fun next(state: Int): VisibleLifecycleRegistry {
         if (mCurrentState == state) return this
         val event = EVENT[state] ?: error("Not accept state $state")
-        Log.i("LifecycleEvent", "${fragment.javaClass.simpleName} - $event")
+        if (event != Event.ON_RESUME) Log.i("LifecycleEvent", "${fragment.javaClass.simpleName} - $event")
         handleLifecycleEvent(event)
         mCurrentState = state
         return this
@@ -137,6 +146,7 @@ class CurrentResumeLifecycleRegistry(provider: LifecycleOwner, private val fragm
     }
 
     override fun hide(hidden: Boolean) {
+        fragment.dispatchHidden(hidden)
         if (hidden) {
             doPause()
         } else {

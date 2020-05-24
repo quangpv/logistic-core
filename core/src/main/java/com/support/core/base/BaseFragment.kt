@@ -57,7 +57,6 @@ abstract class BaseFragment(contentLayoutId: Int) : Fragment(contentLayoutId), R
     }
 
     override fun onHiddenChanged(hidden: Boolean) {
-        childVisible?.onHiddenChanged(hidden)
         visibleRegistry.hide(hidden)
     }
 
