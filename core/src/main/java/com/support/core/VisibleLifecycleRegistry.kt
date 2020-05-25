@@ -36,7 +36,7 @@ abstract class ViewLifecycleRegistry(provider: LifecycleOwner, fragment: Fragmen
 
     private val fragmentRef = WeakReference(fragment)
 
-    private val fragment: Fragment
+    val fragment: Fragment
         get() = fragmentRef.get()
                 ?: error("Fragment of this LifecycleRegistry is already garbage collected")
 
@@ -64,8 +64,8 @@ abstract class ViewLifecycleRegistry(provider: LifecycleOwner, fragment: Fragmen
     }
 
     fun hide(hidden: Boolean) {
-        if (!isActivated) return
-
+        if (!fragment.lifecycle.currentState.isAtLeast(State.STARTED)) return
+        isActivated = !hidden
         if (hidden) {
             sendHiddenState(STATE_PAUSED)
             sendHiddenState(STATE_STOPPED)
@@ -79,7 +79,7 @@ abstract class ViewLifecycleRegistry(provider: LifecycleOwner, fragment: Fragmen
         if (mCurrentState == state) return
         val event = EVENT[state] ?: error("Not accept state $state")
         if (event != Event.ON_RESUME && event != Event.ON_PAUSE)
-            Log.i("LifecycleEvent", "${fragment.javaClass.simpleName} - $event")
+            Log.i("LifecycleEvent", "${fragment.javaClass.simpleName}- $event")
         handleLifecycleEvent(event)
         mCurrentState = state
     }
@@ -95,11 +95,9 @@ abstract class ViewLifecycleRegistry(provider: LifecycleOwner, fragment: Fragmen
     }
 
     private fun dispatchState(state: Int) {
-        fragment.childFragmentManager.fragments.forEach {
-            val registry = (it as? BaseFragment)?.visibleOwner?.lifecycle as? ViewLifecycleRegistry
-            if (registry != null && registry.isActivated) {
-                registry.sendHiddenState(state)
-            }
+        fragment.childFragmentManager.fragments.forEach { child ->
+            val registry = (child as? BaseFragment)?.visibleOwner?.lifecycle as? ViewLifecycleRegistry
+            if (registry != null && registry.isActivated) registry.sendHiddenState(state)
         }
     }
 }
@@ -113,14 +111,12 @@ class VisibleLifecycleRegistry(
 
     override fun start() {
         if (!isVisibleOnScreen) return
-
         isActivated = true
         next(STATE_STARTED)
     }
 
     override fun stop() {
         if (!isVisibleOnScreen) return
-
         isActivated = false
         next(STATE_STOPPED)
     }
@@ -141,11 +137,9 @@ class CurrentResumeLifecycleRegistry(
 ) : ViewLifecycleRegistry(provider, fragment) {
     override var isActivated: Boolean = false
 
-    override fun start() {
-    }
+    override fun start() {}
 
-    override fun stop() {
-    }
+    override fun stop() {}
 
     override fun resume() {
         if (!isVisibleOnScreen) return

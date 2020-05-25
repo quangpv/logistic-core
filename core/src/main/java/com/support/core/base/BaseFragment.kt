@@ -83,4 +83,4 @@ abstract class BaseFragment(contentLayoutId: Int) : Fragment(contentLayoutId), R
 
 
 val Fragment.isVisibleOnScreen: Boolean
-    get() = !isHidden && (parentFragment?.isVisibleOnScreen ?: true)
+    get() = !isHidden && isAdded && (parentFragment?.isVisibleOnScreen ?: true)
