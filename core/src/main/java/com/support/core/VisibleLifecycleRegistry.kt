@@ -1,46 +1,24 @@
 package com.support.core
 
+import android.os.Bundle
 import android.util.Log
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.LifecycleRegistry
 import com.support.core.base.BaseFragment
-import com.support.core.base.childVisible
 import com.support.core.base.isVisibleOnScreen
+import java.lang.ref.WeakReference
 
-abstract class ViewLifecycleRegistry(provider: LifecycleOwner) : LifecycleRegistry(provider) {
-
-    abstract fun create()
-
-    abstract fun destroy()
-
-    abstract fun start()
-
-    abstract fun stop()
-
-    abstract fun resume()
-
-    abstract fun pause()
-
-    abstract fun hide(hidden: Boolean)
-
-    protected fun Fragment.dispatchHidden(hidden: Boolean) {
-        ((childVisible as? BaseFragment)?.visibleOwner?.lifecycle as? ViewLifecycleRegistry)
-                ?.hide(hidden)
-    }
-}
-
-class VisibleLifecycleRegistry(provider: LifecycleOwner, private val fragment: Fragment) :
-        ViewLifecycleRegistry(provider) {
+abstract class ViewLifecycleRegistry(provider: LifecycleOwner, fragment: Fragment) : LifecycleRegistry(provider) {
     companion object {
-        private const val STATE_NONE = -1
-        private const val STATE_CREATED = 1
-        private const val STATE_DESTROYED = 2
-        private const val STATE_STARTED = 3
-        private const val STATE_STOPPED = 4
-        private const val STATE_RESUMED = 5
-        private const val STATE_PAUSED = 6
+        const val STATE_NONE = -1
+        const val STATE_CREATED = 1
+        const val STATE_DESTROYED = 2
+        const val STATE_STARTED = 3
+        const val STATE_STOPPED = 4
+        const val STATE_RESUMED = 5
+        const val STATE_PAUSED = 6
 
         private val EVENT = hashMapOf(
                 STATE_CREATED to Event.ON_CREATE,
@@ -50,70 +28,118 @@ class VisibleLifecycleRegistry(provider: LifecycleOwner, private val fragment: F
                 STATE_RESUMED to Event.ON_RESUME,
                 STATE_PAUSED to Event.ON_PAUSE
         )
+        private const val KEY_IS_ACTIVATED = "key:view:lifecycle:registry"
     }
 
     private var mCurrentState = STATE_NONE
+    protected abstract var isActivated: Boolean
 
-    override fun create() {
+    private val fragmentRef = WeakReference(fragment)
+
+    private val fragment: Fragment
+        get() = fragmentRef.get()
+                ?: error("Fragment of this LifecycleRegistry is already garbage collected")
+
+    val isVisibleOnScreen get() = fragment.isVisibleOnScreen
+
+    fun create(savedInstanceState: Bundle?) {
+        isActivated = savedInstanceState?.getBoolean(KEY_IS_ACTIVATED, false) ?: false
         next(STATE_CREATED)
     }
 
-    override fun destroy() {
+    fun destroy() {
         next(STATE_DESTROYED)
     }
 
-    override fun start() {
-        if (fragment.isVisibleOnScreen) next(STATE_STARTED)
+    abstract fun start()
+
+    abstract fun stop()
+
+    abstract fun resume()
+
+    abstract fun pause()
+
+    fun saveInstance(outState: Bundle) {
+        outState.putBoolean(KEY_IS_ACTIVATED, isActivated)
     }
 
-    override fun stop() {
-        if (fragment.isVisibleOnScreen) next(STATE_STOPPED)
-    }
-
-    override fun resume() {
-        if (fragment.isVisibleOnScreen) next(STATE_RESUMED)
-    }
-
-    override fun pause() {
-        if (fragment.isVisibleOnScreen) next(STATE_PAUSED)
-    }
-
-    override fun hide(hidden: Boolean) {
-        fragment.dispatchHidden(hidden)
+    fun hide(hidden: Boolean) {
+        if (!isActivated) return
 
         if (hidden) {
-            next(STATE_PAUSED)
-            next(STATE_STOPPED)
+            sendHiddenState(STATE_PAUSED)
+            sendHiddenState(STATE_STOPPED)
         } else {
-            next(STATE_STARTED)
-            next(STATE_RESUMED)
+            sendHiddenState(STATE_STARTED)
+            sendHiddenState(STATE_RESUMED)
         }
     }
 
-    private fun next(state: Int): VisibleLifecycleRegistry {
-        if (mCurrentState == state) return this
+    protected fun next(state: Int) {
+        if (mCurrentState == state) return
         val event = EVENT[state] ?: error("Not accept state $state")
-        if (event != Event.ON_RESUME) Log.i("LifecycleEvent", "${fragment.javaClass.simpleName} - $event")
+        if (event != Event.ON_RESUME && event != Event.ON_PAUSE)
+            Log.i("LifecycleEvent", "${fragment.javaClass.simpleName} - $event")
         handleLifecycleEvent(event)
         mCurrentState = state
-        return this
+    }
+
+    private fun sendHiddenState(state: Int) {
+        if (state == STATE_STARTED || state == STATE_RESUMED) {
+            next(state)
+            dispatchState(state)
+        } else {
+            dispatchState(state)
+            next(state)
+        }
+    }
+
+    private fun dispatchState(state: Int) {
+        fragment.childFragmentManager.fragments.forEach {
+            val registry = (it as? BaseFragment)?.visibleOwner?.lifecycle as? ViewLifecycleRegistry
+            if (registry != null && registry.isActivated) {
+                registry.sendHiddenState(state)
+            }
+        }
+    }
+}
+
+class VisibleLifecycleRegistry(
+        provider: LifecycleOwner,
+        fragment: Fragment
+) : ViewLifecycleRegistry(provider, fragment) {
+
+    override var isActivated: Boolean = false
+
+    override fun start() {
+        if (!isVisibleOnScreen) return
+
+        isActivated = true
+        next(STATE_STARTED)
+    }
+
+    override fun stop() {
+        if (!isVisibleOnScreen) return
+
+        isActivated = false
+        next(STATE_STOPPED)
+    }
+
+    override fun resume() {
+        if (isVisibleOnScreen) next(STATE_RESUMED)
+    }
+
+    override fun pause() {
+        if (isVisibleOnScreen) next(STATE_PAUSED)
     }
 
 }
 
-class CurrentResumeLifecycleRegistry(provider: LifecycleOwner, private val fragment: Fragment) : ViewLifecycleRegistry(provider) {
-    private val name get() = fragment.javaClass.simpleName
-
-    var isActivated: Boolean = false
-        private set
-
-    override fun create() {
-        handleLifecycleEvent(Event.ON_CREATE)
-    }
-
-    override fun destroy() {
-        handleLifecycleEvent(Event.ON_DESTROY)
-    }
+class CurrentResumeLifecycleRegistry(
+        provider: LifecycleOwner,
+        fragment: Fragment
+) : ViewLifecycleRegistry(provider, fragment) {
+    override var isActivated: Boolean = false
 
     override fun start() {
     }
@@ -122,36 +148,25 @@ class CurrentResumeLifecycleRegistry(provider: LifecycleOwner, private val fragm
     }
 
     override fun resume() {
-        if (!fragment.isVisibleOnScreen) return
+        if (!isVisibleOnScreen) return
         isActivated = true
         doResume()
     }
 
     override fun pause() {
-        if (!fragment.isVisibleOnScreen) return
+        if (!isVisibleOnScreen) return
         isActivated = false
         doPause()
     }
 
     private fun doResume() {
-        handleLifecycleEvent(Event.ON_START)
-        handleLifecycleEvent(Event.ON_RESUME)
-        Log.i("LifecycleEvent", "$name - ON_START")
+        next(STATE_STARTED)
+        next(STATE_RESUMED)
     }
 
     private fun doPause() {
-        handleLifecycleEvent(Event.ON_PAUSE)
-        handleLifecycleEvent(Event.ON_STOP)
-        Log.i("LifecycleEvent", "$name - ON_STOP")
-    }
-
-    override fun hide(hidden: Boolean) {
-        fragment.dispatchHidden(hidden)
-        if (hidden) {
-            doPause()
-        } else {
-            doResume()
-        }
+        next(STATE_PAUSED)
+        next(STATE_STOPPED)
     }
 }
 

@@ -26,7 +26,7 @@ abstract class BaseFragment(contentLayoutId: Int) : Fragment(contentLayoutId), R
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        visibleRegistry.create()
+        visibleRegistry.create(savedInstanceState)
         if (this is FragmentVisibleObserver) visibleRegistry.addObserver(this)
     }
 
@@ -34,6 +34,11 @@ abstract class BaseFragment(contentLayoutId: Int) : Fragment(contentLayoutId), R
         super.onDestroyView()
         visibleRegistry.destroy()
         localStore.clear()
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        visibleRegistry.saveInstance(outState)
     }
 
     override fun onStart() {
@@ -79,11 +84,3 @@ abstract class BaseFragment(contentLayoutId: Int) : Fragment(contentLayoutId), R
 
 val Fragment.isVisibleOnScreen: Boolean
     get() = !isHidden && (parentFragment?.isVisibleOnScreen ?: true)
-
-val Fragment.childVisible
-    get() = childFragmentManager.fragments
-            .find {
-                val isActivated = ((it as? BaseFragment)?.visibleOwner?.lifecycle
-                        as? CurrentResumeLifecycleRegistry)?.isActivated ?: true
-                !it.isHidden && isActivated
-            }
