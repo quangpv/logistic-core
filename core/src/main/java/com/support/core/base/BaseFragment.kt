@@ -34,6 +34,7 @@ abstract class BaseFragment(contentLayoutId: Int) : Fragment(contentLayoutId), R
         super.onDestroyView()
         visibleRegistry.destroy()
         localStore.clear()
+        mResultRegistry.clear()
     }
 
     override fun onSaveInstanceState(outState: Bundle) {

@@ -30,6 +30,7 @@ abstract class BaseActivity(contentLayoutId: Int) : AppCompatActivity(contentLay
     override fun onDestroy() {
         super.onDestroy()
         localStore.clear()
+        mResultRegistry.clear()
     }
 
     override fun onRequestPermissionsResult(

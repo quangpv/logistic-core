@@ -3,7 +3,6 @@ package com.support.core.widget
 import android.graphics.Color
 import android.os.Build
 import android.view.Gravity
-import android.view.View
 import android.view.ViewGroup
 import android.widget.FrameLayout
 import androidx.fragment.app.FragmentActivity
@@ -50,12 +49,17 @@ abstract class VersionTag {
 
     companion object {
         operator fun get(debug: Boolean, flavor: String): VersionTag {
-            val dev = "dev"
+            val pro = "pro"
+            val uat = "uat"
             return when {
-                debug && flavor == dev -> DevDebugVersion()
-                debug && flavor != dev -> ProDebugVersion()
-                !debug && flavor == dev -> DevReleaseVersion()
-                else -> ProReleaseVersion()
+                debug && flavor == pro -> ProDebugVersion()
+                debug && flavor == uat -> UatDebugVersion()
+
+                !debug && flavor == pro -> ProReleaseVersion()
+                !debug && flavor == uat -> UatReleaseVersion()
+
+                debug -> DevDebugVersion()
+                else -> DevReleaseVersion()
             }
         }
     }
@@ -70,6 +74,18 @@ class DevDebugVersion : VersionTag() {
 class ProDebugVersion : VersionTag() {
     override val shouldShow: Boolean = true
     override val versionText: String = "Pro Debug"
+    override val versionColor: Int = Color.parseColor("#283593")
+}
+
+class UatDebugVersion : VersionTag() {
+    override val shouldShow: Boolean = true
+    override val versionText: String = "UAT Debug"
+    override val versionColor: Int = Color.parseColor("#283593")
+}
+
+class UatReleaseVersion : VersionTag() {
+    override val shouldShow: Boolean = true
+    override val versionText: String = "UAT Release"
     override val versionColor: Int = Color.parseColor("#283593")
 }
 
