@@ -46,7 +46,6 @@ fun ViewGroup.setContentView(id: Int) {
             cache[id] = it
         }
     }
-    if (getChildAt(0) == view) return
     addView(view)
 }
 
