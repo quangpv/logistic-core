@@ -95,7 +95,7 @@ infix fun Boolean.enable(view: View) {
     view.dispatchEnabled(this)
 }
 
-private fun View.dispatchEnabled(b: Boolean) {
+fun View.dispatchEnabled(b: Boolean) {
     isEnabled = b
     if (this is ViewGroup) (0 until childCount).forEach {
         getChildAt(it).dispatchEnabled(b)
