@@ -23,6 +23,10 @@ abstract class RecyclerAdapter<T> : RecyclerView.Adapter<RecyclerView.ViewHolder
         notifyDataSetChanged()
     }
 
+    fun setData(items: List<T>) {
+        mItems = items
+    }
+
     override fun getItemCount(): Int = mItems?.size ?: 0
 
     @Suppress("unchecked_cast")
