@@ -11,8 +11,11 @@ open class CountryDetector(private val context: Context, private val def: String
     private val simCountry: String?
         get() {
             try {
-                val telephonyManager = context.getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager
-                return telephonyManager.simCountryIso
+                val telephonyManager =
+                    context.getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager
+                val code = telephonyManager.simCountryIso
+                if (code.isBlank()) return null
+                return code
             } catch (e: Exception) {
                 e.printStackTrace()
             }
@@ -22,8 +25,11 @@ open class CountryDetector(private val context: Context, private val def: String
     private val networkCountry: String?
         get() {
             try {
-                val telephonyManager = context.getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager
-                return telephonyManager.networkCountryIso
+                val telephonyManager =
+                    context.getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager
+                val code = telephonyManager.networkCountryIso
+                if (code.isBlank()) return null
+                return code
             } catch (e: Exception) {
                 e.printStackTrace()
             }
@@ -33,7 +39,9 @@ open class CountryDetector(private val context: Context, private val def: String
     private val localeCountry: String?
         get() {
             try {
-                return context.resources.configuration.locale.country
+                val code = context.resources.configuration.locale.country
+                if (code.isBlank()) return null
+                return code
             } catch (e: Exception) {
                 e.printStackTrace()
             }
