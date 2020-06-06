@@ -110,7 +110,6 @@ class InternetChecker(private val context: Context) {
         try {
             context.unregisterReceiver(mReceiver)
         } catch (e: Throwable) {
-            e.printStackTrace()
         }
         context.registerReceiver(
                 mReceiver,
@@ -131,7 +130,7 @@ class InternetChecker(private val context: Context) {
     private val isOnline: Boolean
         get() {
             return try {
-                InetAddress.getByName("google.com").isReachable(300)
+                InetAddress.getByName("google.com").isReachable(1000)
             } catch (t: Throwable) {
                 false
             }
