@@ -18,6 +18,7 @@ class LocalEvent<T> : Event<T> {
 
     val value: T? get() = mValue
 
+    @Deprecated("unused", ReplaceWith("post(value)"))
     override fun set(value: T?) {
         post(value)
     }
@@ -77,8 +78,8 @@ class LocalEvent<T> : Event<T> {
     }
 
     private inner class LifeObserver(
-            private val owner: LifecycleOwner,
-            private val observer: Observer<T>
+        private val owner: LifecycleOwner,
+        private val observer: Observer<T>
     ) : ObserverWrapper(), LifecycleEventObserver {
         private var mVersion = version
 

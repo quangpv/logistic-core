@@ -7,8 +7,12 @@ import java.net.InetAddress
 
 val Context.isNetworkConnected: Boolean
     get() {
-        val cm = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
-        return cm.activeNetworkInfo != null && cm.activeNetworkInfo!!.isConnected
+        val connectivityMgr = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        val wifi = connectivityMgr.getNetworkInfo(ConnectivityManager.TYPE_WIFI)
+        val mobile = connectivityMgr.getNetworkInfo(ConnectivityManager.TYPE_MOBILE)
+        if (wifi != null && wifi.isConnected) return true
+        if (mobile != null && mobile.isConnected) return true
+        return false
     }
 
 val isInternetAvailable: Boolean
