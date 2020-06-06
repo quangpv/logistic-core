@@ -5,7 +5,7 @@ import android.app.Application
 import android.os.Bundle
 
 class OnForegroundListener(private val function: (foreground: Boolean) -> Unit) :
-    OnAppRunningListener() {
+        ApplicationLifecycleObserver() {
     override fun onBackground() {
         function(false)
     }
@@ -13,18 +13,10 @@ class OnForegroundListener(private val function: (foreground: Boolean) -> Unit) 
     override fun onForeground() {
         function(true)
     }
-
-    override fun onStart() {
-
-    }
-
-    override fun onStop() {
-
-    }
 }
 
-abstract class OnAppRunningListener :
-    Application.ActivityLifecycleCallbacks {
+abstract class ApplicationLifecycleObserver :
+        Application.ActivityLifecycleCallbacks {
     private var numOfForeground = 0
     private var numOfStart = 0
     private var isConfigChanging = false
@@ -70,16 +62,17 @@ abstract class OnAppRunningListener :
 
     }
 
-    abstract fun onStart()
-    abstract fun onStop()
+    open fun onStart() {}
 
-    abstract fun onBackground()
+    open fun onStop() {}
 
-    abstract fun onForeground()
+    open fun onBackground() {}
+
+    open fun onForeground() {}
 
 }
 
-class ForegroundDetector : OnAppRunningListener() {
+class ForegroundDetector : ApplicationLifecycleObserver() {
     override fun onBackground() {
         foreground = false
     }

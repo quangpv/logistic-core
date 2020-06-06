@@ -8,9 +8,9 @@ import java.util.*
 import kotlin.collections.HashMap
 
 class PhoneCodeProvider(
-    private val context: Context,
-    private val path: String,
-    private val parser: Parser
+        private val context: Context,
+        private val path: String,
+        private val parser: Parser
 ) {
 
     private var mFinder: PhoneCodeFinder? = null
@@ -19,8 +19,8 @@ class PhoneCodeProvider(
         get() {
             if (mFinder == null) {
                 val data = parser.fromJson(
-                    context.assets.open(path).bufferedReader().readText(),
-                    PhoneCodeData::class.java
+                        context.assets.open(path).bufferedReader().readText(),
+                        PhoneCodeData::class.java
                 )?.data ?: error("Can not parse")
                 mFinder = PhoneCodeFinder(data)
             }
@@ -37,7 +37,12 @@ class PhoneCodeProvider(
         return when {
             rawPhone.isBlank() -> EmptyPhoneNumber()
             rawPhone.first() == '+' -> {
-                val code = finder.findByPhone(rawPhone)
+                var code = finder.findByCountryCode(countryCode())
+                val body = rawPhone.removePrefix(code.dialCode)
+
+                if (body.length != rawPhone.length) return PhoneNumber(code, body)
+
+                code = finder.findByPhone(rawPhone)
                 return PhoneNumber(code, rawPhone.removePrefix(code.dialCode))
             }
             rawPhone.first() == '0' -> {
@@ -57,9 +62,9 @@ class PhoneCodeProvider(
 }
 
 class PhoneCode(
-    override val name: String,
-    private val dial_code: String,
-    override val code: String
+        override val name: String,
+        private val dial_code: String,
+        override val code: String
 ) : IPhoneCode {
     override val dialCode: String
         get() = dial_code
@@ -89,7 +94,7 @@ class PhoneCodeFinder(val data: List<PhoneCode>) {
     }
 
     fun findByPhone(rawPhone: String): IPhoneCode {
-        for (i in (3..5)) {
+        for (i in (2..5)) {
             val code = rawPhone.sub(0, i)
             if (mDials.containsKey(code)) return mDials[code]!!
         }

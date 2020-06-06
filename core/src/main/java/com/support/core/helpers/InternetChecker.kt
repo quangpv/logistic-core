@@ -4,6 +4,8 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.LifecycleOwner
 import com.support.core.AppExecutors
 import com.support.core.Inject
@@ -16,6 +18,7 @@ import java.util.*
 @Inject(true)
 class InternetChecker(private val context: Context) {
     private val mNetworkListeners = arrayListOf<(Boolean) -> Unit>()
+    private val mObservers = hashMapOf<(Boolean) -> Unit, ObserverWrapper>()
 
     val isAccessed: Boolean get() = isEnabled && isAvailable
     val isEnabled: Boolean get() = context.isNetworkConnected
@@ -69,6 +72,26 @@ class InternetChecker(private val context: Context) {
         }
     }
 
+    fun observeAvailable(owner: LifecycleOwner, function: (Boolean) -> Unit) {
+        doObserveAvailable({ LifecycleObserverWrapper(owner, function) }, function)
+    }
+
+    fun observeAvailable(function: (Boolean) -> Unit) {
+        doObserveAvailable({ ObserverForeverWrapper(function) }, function)
+    }
+
+    fun removeAvailable(function: (Boolean) -> Unit) {
+        val observer = mObservers[function] ?: return
+        observer.detach()
+    }
+
+    private fun doObserveAvailable(get: () -> ObserverWrapper, function: (Boolean) -> Unit) {
+        if (mObservers.containsKey(function)) return
+        val observer = get()
+        mObservers[function] = observer
+        observer.attach()
+    }
+
     fun addOnAvailableListener(function: (Boolean) -> Unit) {
         if (mNetworkListeners.contains(function)) return
         synchronized(mNetworkListeners) { mNetworkListeners.add(function) }
@@ -79,7 +102,7 @@ class InternetChecker(private val context: Context) {
         synchronized(mNetworkListeners) { mNetworkListeners.remove(function) }
     }
 
-    fun start() {
+    private fun start() {
         stop()
 
         mScheduler = Timer()
@@ -90,12 +113,12 @@ class InternetChecker(private val context: Context) {
             e.printStackTrace()
         }
         context.registerReceiver(
-            mReceiver,
-            IntentFilter("android.net.conn.CONNECTIVITY_CHANGE")
+                mReceiver,
+                IntentFilter("android.net.conn.CONNECTIVITY_CHANGE")
         )
     }
 
-    fun stop() = block(mScheduler) {
+    private fun stop() = block(mScheduler) {
         cancel()
         purge()
         mScheduler = null
@@ -113,6 +136,48 @@ class InternetChecker(private val context: Context) {
                 false
             }
         }
+
+    abstract inner class ObserverWrapper(val function: (Boolean) -> Unit) : (Boolean) -> Unit {
+        open fun detach() {
+            removeOnAvailableListener(this)
+            mObservers.remove(function)
+            if (mObservers.size == 0) stop()
+        }
+
+        open fun attach() {
+            if (mAvailable != null) function(mAvailable!!)
+            addOnAvailableListener(this)
+            if (mScheduler == null) start()
+        }
+
+        override fun invoke(p1: Boolean) {
+            AppExecutors.mainIO.execute { function(p1) }
+        }
+    }
+
+    inner class ObserverForeverWrapper(function: (Boolean) -> Unit) : ObserverWrapper(function)
+
+    inner class LifecycleObserverWrapper(
+            private val owner: LifecycleOwner,
+            function: (Boolean) -> Unit
+    ) : ObserverWrapper(function), LifecycleEventObserver {
+
+        override fun onStateChanged(source: LifecycleOwner, event: Lifecycle.Event) {
+            if (event == Lifecycle.Event.ON_DESTROY) {
+                detach()
+            }
+        }
+
+        override fun detach() {
+            owner.lifecycle.removeObserver(this)
+            super.detach()
+        }
+
+        override fun attach() {
+            super.attach()
+            owner.lifecycle.addObserver(this)
+        }
+    }
 }
 
 class NetworkDisableException : Throwable("No network connection.")

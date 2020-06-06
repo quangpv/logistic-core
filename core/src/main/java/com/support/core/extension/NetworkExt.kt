@@ -17,8 +17,7 @@ val Context.isNetworkConnected: Boolean
 
 val isInternetAvailable: Boolean
     get() = try {
-        val address = InetAddress.getByName("google.com")
-        address != null && address.address.isNotEmpty()
+        InetAddress.getByName("google.com").isReachable(300)
     } catch (e: Throwable) {
         false
     }
