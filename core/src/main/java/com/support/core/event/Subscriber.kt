@@ -70,9 +70,20 @@ class Promise<T> : Subscriber<T>(), PromisePostAble<T> {
 }
 
 fun <T> subscriber(function: PostAble<T>.() -> Unit): Subscriber<T> {
-    return Subscriber<T>().apply(function)
+    return Subscriber<T>().apply {
+        try {
+            function()
+        } catch (t: Throwable) {
+        }
+    }
 }
 
 fun <T> promise(function: PromisePostAble<T>.() -> Unit): Promise<T> {
-    return Promise<T>().apply(function)
+    return Promise<T>().apply {
+        try {
+            function()
+        } catch (e: Throwable) {
+            postError(e)
+        }
+    }
 }
