@@ -15,6 +15,7 @@ import android.view.ViewGroup
 import android.widget.EditText
 import android.widget.TextView
 import androidx.annotation.DimenRes
+import com.support.core.R
 import java.util.*
 
 
@@ -59,9 +60,9 @@ fun TextView.format(vararg format: Any): String {
 }
 
 fun TextView.addSpan(
-    spanValue: String,
-    spanned: CharacterStyle,
-    textValue: String = text.toString()
+        spanValue: String,
+        spanned: CharacterStyle,
+        textValue: String = text.toString()
 ) {
     val span = SpannableString(textValue)
     val start = span.indexOf(spanValue)
@@ -79,10 +80,10 @@ fun ViewGroup.inflate(id: Int): View {
 }
 
 fun Context.with(
-    attrs: AttributeSet?,
-    type: IntArray,
-    defStyleAttr: Int,
-    function: (TypedArray) -> Unit
+        attrs: AttributeSet?,
+        type: IntArray,
+        defStyleAttr: Int,
+        function: (TypedArray) -> Unit
 ) {
     if (attrs != null) {
         val typed = obtainStyledAttributes(attrs, type, defStyleAttr, 0)
@@ -91,19 +92,36 @@ fun Context.with(
     }
 }
 
-infix fun Boolean.enable(view: View) {
-    view.dispatchEnabled(this)
-}
-
 fun View.dispatchEnabled(b: Boolean) {
-    isEnabled = b
+    b enable this
     if (this is ViewGroup) (0 until childCount).forEach {
         getChildAt(it).dispatchEnabled(b)
     }
 }
 
+fun View.dispatchForceEnabled(b: Boolean) {
+    b forceEnable this
+    if (this is ViewGroup) (0 until childCount).forEach {
+        getChildAt(it).dispatchForceEnabled(b)
+    }
+}
+
+infix fun Boolean.enable(view: View) {
+    val forceEnable = view.getTag(R.id.force_enable).let { toggle -> toggle == true || toggle == null }
+    view.isEnabled = forceEnable && this
+}
+
 infix fun Boolean.enable(views: List<View>) {
     views.forEach { this enable it }
+}
+
+infix fun Boolean.forceEnable(views: List<View>) {
+    views.forEach { this forceEnable it }
+}
+
+infix fun Boolean.forceEnable(view: View) {
+    view.setTag(R.id.force_enable, this)
+    view.isEnabled = this
 }
 
 infix fun Boolean.show(view: View) {

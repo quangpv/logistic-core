@@ -10,6 +10,14 @@ fun String?.safe(def: String = ""): String {
     return this ?: def
 }
 
+fun String?.or(def: String = ""): String {
+    if (this != null) {
+        if (this.isBlank()) return def
+        return this
+    }
+    return def
+}
+
 fun Int?.safe(def: Int = 0): Int {
     return this ?: def
 }
