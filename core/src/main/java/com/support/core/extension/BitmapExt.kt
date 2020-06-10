@@ -25,3 +25,7 @@ fun Bitmap.toBytes(): ByteArray {
 fun bitmapFrom(byteArray: ByteArray): Bitmap? {
     return BitmapFactory.decodeByteArray(byteArray, 0, byteArray.size)
 }
+
+fun bitmapFrom(url: String): Bitmap {
+    return BitmapFactory.decodeFile(url)
+}
