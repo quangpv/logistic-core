@@ -173,6 +173,10 @@ inline fun <reified T : ViewModel> Fragment.viewModel(): Lazy<T> =
 inline fun <reified T : ViewModel> Fragment.shareViewModel(): Lazy<T> =
         lazy(LazyThreadSafetyMode.NONE) { requireActivity().getViewModel<T>() }
 
+@Deprecated("unused", ReplaceWith("lazy(LazyThreadSafetyMode.NONE) { function().getViewModel<T>() }"))
 inline fun <reified T : ViewModel> shareViewModel(crossinline function: () -> ViewModelStoreOwner): Lazy<T> =
+        lazy(LazyThreadSafetyMode.NONE) { function().getViewModel<T>() }
+
+inline fun <reified T : ViewModel> viewModel(crossinline function: () -> ViewModelStoreOwner): Lazy<T> =
         lazy(LazyThreadSafetyMode.NONE) { function().getViewModel<T>() }
 

@@ -46,6 +46,10 @@ class LocalEvent<T> : Event<T> {
         observe(owner, Observer(function))
     }
 
+    fun observeNotNull(owner: LifecycleOwner, observer: Observer<T>) {
+        observe(owner, observer)
+    }
+
     fun observe(owner: LifecycleOwner, observer: Observer<T>) {
         val lifeOwner = when (owner) {
             is BaseFragment -> owner.visibleOwner
@@ -78,8 +82,8 @@ class LocalEvent<T> : Event<T> {
     }
 
     private inner class LifeObserver(
-        private val owner: LifecycleOwner,
-        private val observer: Observer<T>
+            private val owner: LifecycleOwner,
+            private val observer: Observer<T>
     ) : ObserverWrapper(), LifecycleEventObserver {
         private var mVersion = version
 
