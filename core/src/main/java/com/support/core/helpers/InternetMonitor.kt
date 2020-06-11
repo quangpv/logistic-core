@@ -151,7 +151,7 @@ class PingMonitor(context: Context) : InternetMonitor(context) {
     private val isOnline: Boolean
         get() {
             return try {
-                InetAddress.getByName("8.8.8.8").isReachable(1000)
+                InetAddress.getByName("8.8.8.8").isReachable(4000)
             } catch (t: Throwable) {
                 false
             }
