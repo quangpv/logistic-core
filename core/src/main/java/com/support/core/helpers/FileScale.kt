@@ -6,6 +6,7 @@ import android.graphics.BitmapFactory
 import android.graphics.Rect
 import android.net.Uri
 import com.support.core.Inject
+import java.io.FileNotFoundException
 
 
 @Inject(true)
@@ -28,8 +29,16 @@ class FileScale(
     }
 
     private fun getBitmapFrom(uri: Uri): Bitmap? {
-        val path = FileUtils.getPath(context, uri) ?: return null
-        return BitmapFactory.decodeFile(path)
+
+        val bmp = FileUtils.getPath(context, uri)?.let { BitmapFactory.decodeFile(it) }
+        if (bmp != null) return bmp
+
+        return try {
+            val ims = context.contentResolver.openInputStream(uri)
+            BitmapFactory.decodeStream(ims)
+        } catch (e: FileNotFoundException) {
+            null
+        }
     }
 
     fun execute(bitmap: Bitmap, recycle: Boolean = false): String {
