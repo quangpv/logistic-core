@@ -188,6 +188,11 @@ fun View.show() {
     visibility = View.VISIBLE
 }
 
+fun <T : View> T.visible(b: Boolean, function: (T.() -> Unit)? = null) {
+    if (b) function?.invoke(this)
+    visibility = if (b) View.VISIBLE else View.INVISIBLE
+}
+
 fun Context.toPx(dp: Float): Int {
     return (dp * (resources.displayMetrics.densityDpi.toFloat() / DisplayMetrics.DENSITY_DEFAULT)).toInt()
 }
