@@ -1,5 +1,6 @@
 package com.support.core
 
+import android.app.Activity
 import android.content.Intent
 
 interface ResultOwner {
@@ -101,10 +102,14 @@ class ResultRegistry : ResultLifecycle {
     fun handleActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         mActivityResults.filter { requestCode == it.key }.forEach {
             val callback = it.value
+            if (callback is ActivityInstantResultCallback) {
+                mActivityResults.remove(it.key)
+            }
 
-            callback(resultCode, data)
+            val shouldCallback = (callback is SuccessResultCallback && resultCode == Activity.RESULT_OK)
+                    || callback !is SuccessResultCallback
 
-            if (callback is ActivityInstantResultCallback) mActivityResults.remove(it.key)
+            if (shouldCallback) callback(resultCode, data)
         }
     }
 
@@ -114,6 +119,8 @@ class ResultRegistry : ResultLifecycle {
             mPermissions.remove(it.key)
         }
     }
+
+    private interface SuccessResultCallback
 
     private interface ActivityResultCallback {
         operator fun invoke(resultCode: Int, data: Intent?)
@@ -127,7 +134,7 @@ class ResultRegistry : ResultLifecycle {
         }
     }
 
-    private class OnActivitySuccessResult(val function: (data: Intent?) -> Unit) : ActivityResultCallback {
+    private class OnActivitySuccessResult(val function: (data: Intent?) -> Unit) : ActivityResultCallback, SuccessResultCallback {
         override fun invoke(resultCode: Int, data: Intent?) {
             function(data)
         }
@@ -139,7 +146,7 @@ class ResultRegistry : ResultLifecycle {
         }
     }
 
-    private class OnActivityInstantSuccessResult(val callback: (data: Intent?) -> Unit) : ActivityInstantResultCallback {
+    private class OnActivityInstantSuccessResult(val callback: (data: Intent?) -> Unit) : ActivityInstantResultCallback, SuccessResultCallback {
         override fun invoke(resultCode: Int, data: Intent?) {
             callback(data)
         }
