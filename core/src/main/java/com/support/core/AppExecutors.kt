@@ -2,6 +2,7 @@ package com.support.core
 
 import android.os.Handler
 import android.os.Looper
+import androidx.arch.core.executor.ArchTaskExecutor
 import java.util.concurrent.Executor
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
@@ -14,6 +15,7 @@ interface TaskExecutors {
 
     val launchIO: ExecutorService
     val concurrentIO: ExecutorService
+    val isOnMainThread: Boolean
 }
 
 class AppExecutors : TaskExecutors {
@@ -23,8 +25,11 @@ class AppExecutors : TaskExecutors {
     override val scheduler: ScheduledExecutorService = Executors.newScheduledThreadPool(2)
     override val mainIO: Executor = MainExecutor()
     override val concurrentIO: ExecutorService = Executors.newCachedThreadPool()
+    override val isOnMainThread get() = Looper.getMainLooper() == Looper.myLooper()
 
     companion object {
+        val isOnMainThread get() = mDelegate?.isOnMainThread ?: sInstance.isOnMainThread
+
         private val sInstance: AppExecutors by lazy { AppExecutors() }
         private var mDelegate: TaskExecutors? = null
 
@@ -65,5 +70,5 @@ class MainExecutor : Executor {
     }
 }
 
-val isOnMainThread get() = Looper.getMainLooper() == Looper.myLooper()
+val isOnMainThread get() = AppExecutors.isOnMainThread
 

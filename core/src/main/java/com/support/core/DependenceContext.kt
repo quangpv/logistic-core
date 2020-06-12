@@ -3,10 +3,19 @@ package com.support.core
 import android.app.Application
 import android.content.Context
 import androidx.lifecycle.ViewModel
+import kotlin.reflect.KClass
 
 @Target(AnnotationTarget.CLASS)
 @Retention(AnnotationRetention.RUNTIME)
 annotation class Inject(
+        val singleton: Boolean = false
+)
+
+
+@Target(AnnotationTarget.CLASS)
+@Retention(AnnotationRetention.RUNTIME)
+annotation class InjectBy(
+        val clazz: KClass<*>,
         val singleton: Boolean = false
 )
 
@@ -188,16 +197,30 @@ class DependenceContext : ProvideContext() {
             ViewModel::class.java.isAssignableFrom(clazz) -> factory(clazz) {
                 create(clazz)
             }
+            clazz.isInterface -> provideByInjectBy(clazz)
+            else -> provideByInject(clazz)
+        }
+    }
 
-            else -> {
-                val annotation = clazz.getAnnotation(Inject::class.java)
-                        ?: error("Not found provider for ${clazz.simpleName}")
-                if (annotation.singleton) single(clazz) {
-                    create(clazz)
-                } else factory(clazz) {
-                    create(clazz)
-                }
-            }
+    private fun <T> provideByInjectBy(clazz: Class<T>) {
+        val annotation = clazz.getAnnotation(InjectBy::class.java)
+                ?: error("Not found provider for ${clazz.simpleName}")
+        val byClazz = annotation.clazz.java
+
+        if (annotation.singleton) single(clazz) {
+            create(byClazz) as T
+        } else factory(clazz) {
+            create(byClazz) as T
+        }
+    }
+
+    private fun <T> provideByInject(clazz: Class<T>) {
+        val annotation = clazz.getAnnotation(Inject::class.java)
+                ?: error("Not found provider for ${clazz.simpleName}")
+        if (annotation.singleton) single(clazz) {
+            create(clazz)
+        } else factory(clazz) {
+            create(clazz)
         }
     }
 
