@@ -6,11 +6,16 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.Observer
 import com.support.core.base.BaseFragment
 import com.support.core.extension.post
+import com.support.core.isOnMainThread
 
 
 interface PostAble<in T> {
     fun postValue(value: T?)
     fun setValue(value: T?)
+    fun post(value: T? = null) {
+        if (isOnMainThread) setValue(value)
+        else postValue(value)
+    }
 }
 
 interface PromisePostAble<in T> : PostAble<T> {
