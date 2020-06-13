@@ -32,11 +32,11 @@ class ConcurrentScope(private val context: ConcurrentContext) {
     private var mLaunch: Future<*>? = null
     private val mTasks = arrayListOf<Deferred<*>>()
 
-    fun cancel(ignore: DeferredError) = synchronized(this) {
+    internal fun cancel(ignore: DeferredError) = synchronized(this) {
         mTasks.forEach { if (it != ignore.deferred) it.cancel(ignore.error) }
     }
 
-    fun cancel() = synchronized(this) {
+    fun cancel():Unit = synchronized(this) {
         mTasks.forEach { it.cancel() }
         mLaunch?.cancel(true)
     }
@@ -49,7 +49,7 @@ class ConcurrentScope(private val context: ConcurrentContext) {
         return execute(this@ConcurrentScope)
     }
 
-    fun remove(deferred: Deferred<*>) = synchronized(this) {
+    internal fun remove(deferred: Deferred<*>) = synchronized(this) {
         mTasks.remove(deferred)
         if (mTasks.isEmpty()) {
             mLaunch = null
@@ -57,7 +57,7 @@ class ConcurrentScope(private val context: ConcurrentContext) {
         }
     }
 
-    fun execute(function: ConcurrentScope.() -> Unit) {
+    internal fun execute(function: ConcurrentScope.() -> Unit) {
         if (mLaunch != null) return
 
         mLaunch = launchIO.submit {
