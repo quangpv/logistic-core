@@ -28,3 +28,7 @@
 -keepclassmembers class * extends androidx.lifecycle.ViewModel{
  public <init>(...);
 }
+
+-keepclassmembers class * extends com.support.core.Injectable {
+ public <init>(...);
+}

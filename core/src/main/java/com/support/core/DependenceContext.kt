@@ -2,6 +2,7 @@ package com.support.core
 
 import android.app.Application
 import android.content.Context
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import kotlin.reflect.KClass
 
@@ -15,9 +16,12 @@ annotation class Inject(
 @Target(AnnotationTarget.CLASS)
 @Retention(AnnotationRetention.RUNTIME)
 annotation class InjectBy(
-        val clazz: KClass<*>,
+        val clazz: KClass<out Injectable>,
         val singleton: Boolean = false
 )
+
+interface Injectable
+interface SingleInjectable : Injectable
 
 interface Bean<T> {
     val value: T
@@ -216,8 +220,23 @@ class DependenceContext : ProvideContext() {
 
     private fun <T> provideByInject(clazz: Class<T>) {
         val annotation = clazz.getAnnotation(Inject::class.java)
-                ?: error("Not found provider for ${clazz.simpleName}")
-        if (annotation.singleton) single(clazz) {
+        var shouldProvide = false
+        var singleton = false
+
+        when {
+            annotation != null -> {
+                shouldProvide = true
+                singleton = annotation.singleton
+            }
+            Injectable::class.java.isAssignableFrom(clazz) -> {
+                shouldProvide = true
+                singleton = SingleInjectable::class.java.isAssignableFrom(clazz)
+                if (singleton) Log.e("Singleton", clazz.name)
+            }
+        }
+        if (!shouldProvide) error("Not found declaration for ${clazz.simpleName}")
+
+        if (singleton) single(clazz) {
             create(clazz)
         } else factory(clazz) {
             create(clazz)
