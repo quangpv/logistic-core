@@ -1,5 +1,6 @@
 package com.support.core.functional
 
+import android.content.Context
 import android.view.View
 import com.support.core.R
 
@@ -8,6 +9,8 @@ abstract class Feature {
     val view: View? get() = mView
     val requireView: View
         get() = mView ?: error("Feature ${this.javaClass.simpleName} not attached to view yet!")
+
+    val context: Context get() = requireView.context
 
     companion object {
         internal val TAG_ID = R.id.feature

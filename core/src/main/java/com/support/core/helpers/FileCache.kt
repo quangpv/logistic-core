@@ -2,12 +2,10 @@ package com.support.core.helpers
 
 import android.content.Context
 import android.graphics.Bitmap
-import com.support.core.Inject
 import java.io.File
 import java.io.FileOutputStream
 
-@Inject(true)
-class FileCache(private val context: Context, private val folderName: String = "photos") {
+class FileCache(private val context: Context, private val folderName: String) {
     fun delete(signaturePath: String) {
         File(signaturePath).delete()
     }

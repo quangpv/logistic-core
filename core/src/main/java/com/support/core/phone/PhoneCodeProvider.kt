@@ -1,16 +1,18 @@
 package com.support.core.phone
 
 import android.content.Context
+import android.os.Parcelable
 import androidx.annotation.WorkerThread
 import com.support.core.extension.sub
 import com.support.core.functional.Parser
+import kotlinx.android.parcel.Parcelize
 import java.util.*
 import kotlin.collections.HashMap
 
 class PhoneCodeProvider(
-        private val context: Context,
-        private val path: String,
-        private val parser: Parser
+    private val context: Context,
+    private val path: String,
+    private val parser: Parser
 ) {
 
     private var mFinder: PhoneCodeFinder? = null
@@ -19,8 +21,8 @@ class PhoneCodeProvider(
         get() {
             if (mFinder == null) {
                 val data = parser.fromJson(
-                        context.assets.open(path).bufferedReader().readText(),
-                        PhoneCodeData::class.java
+                    context.assets.open(path).bufferedReader().readText(),
+                    PhoneCodeData::class.java
                 )?.data ?: error("Can not parse")
                 mFinder = PhoneCodeFinder(data)
             }
@@ -61,15 +63,17 @@ class PhoneCodeProvider(
     }
 }
 
+@Parcelize
 class PhoneCode(
-        override val name: String,
-        private val dial_code: String,
-        override val code: String
+    override val name: String,
+    private val dial_code: String,
+    override val code: String
 ) : IPhoneCode {
     override val dialCode: String
         get() = dial_code
 }
 
+@Parcelize
 class EmptyPhoneCode : IPhoneCode {
     override val name: String
         get() = ""
@@ -106,7 +110,7 @@ class PhoneCodeFinder(val data: List<PhoneCode>) {
     }
 }
 
-interface IPhoneCode {
+interface IPhoneCode : Parcelable {
     val name: String
     val dialCode: String
     val code: String
