@@ -258,7 +258,12 @@ class DependenceContext : ProvideContext() {
                 ?: error("Not found constructor for ${clazz.simpleName}")
 
         val paramTypes = constructor.genericParameterTypes
-        return constructor.newInstance(*paramTypes.map { lookup(it as Class<*>).value }.toTypedArray()) as T
+        return try {
+            constructor.newInstance(*paramTypes.map { lookup(it as Class<*>).value }.toTypedArray()) as T
+        }catch (e:Throwable){
+            Log.e("DependencyContext", "Error lookup for ${clazz.name}")
+            throw e
+        }
     }
 
 }
