@@ -14,7 +14,6 @@ abstract class LifecycleFeature : Feature(), LifecycleOwner {
     private var mSourceOwner: LifecycleOwner? = null
     private var mLifecycleRegistry: LifecycleRegistry? = null
     private val registry get() = lifecycle as LifecycleRegistry
-    val self get() = this
     private val mSourceObserver = LifecycleEventObserver { _, event ->
 
         if (event == Lifecycle.Event.ON_DESTROY) {
@@ -63,6 +62,7 @@ abstract class Feature {
     val view: View? get() = mView
     val requireView: View
         get() = mView ?: error("Feature ${this.javaClass.simpleName} not attached to view yet!")
+    val self get() = this
 
     companion object {
         internal val TAG_ID = R.id.feature
