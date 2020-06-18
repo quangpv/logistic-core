@@ -19,10 +19,10 @@ class FileScale(
         const val MAX_HEIGHT = 720
     }
 
-    fun execute(uri: Uri): String {
+    fun execute(uri: Uri, cacheInGallery: Boolean = false): String {
         val bitmap = getBitmapFrom(uri) ?: error("Can not decode ${uri.path}")
         val bmp = scale(bitmap)
-        val newPath = fileCache.save(bmp)
+        val newPath = if (cacheInGallery) fileCache.saveToGallery(bmp) else fileCache.saveToCache(bmp)
         bmp.recycle()
         bitmap.recycle()
         return newPath
@@ -41,9 +41,9 @@ class FileScale(
         }
     }
 
-    fun execute(bitmap: Bitmap, recycle: Boolean = false): String {
+    fun execute(bitmap: Bitmap, recycle: Boolean = false, cacheInGallery: Boolean = false): String {
         val bmp = scale(bitmap)
-        val newPath = fileCache.save(bmp)
+        val newPath = if (cacheInGallery) fileCache.saveToGallery(bmp) else fileCache.saveToCache(bmp)
         bmp.recycle()
         if (recycle) bitmap.recycle()
         return newPath
