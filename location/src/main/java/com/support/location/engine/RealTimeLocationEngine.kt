@@ -2,13 +2,12 @@ package com.support.location.engine
 
 import android.content.Context
 import android.location.Location
-import android.util.Log
 import androidx.annotation.MainThread
 import com.support.location.engine.loader.LocationLoader
 
 class RealTimeLocationEngine(
         private val context: Context,
-        private val loader: LocationLoader = LocationLoader.getDefault(context)
+        private val loader: LocationLoader
 ) : LocationEngine {
     private var mLastLocation: Location? = null
     private var mStarted: Boolean = false

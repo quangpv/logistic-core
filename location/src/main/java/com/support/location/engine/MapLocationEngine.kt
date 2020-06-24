@@ -5,7 +5,7 @@ import com.support.location.engine.loader.LocationLoader
 
 class MapLocationEngine(
         private val context: Context,
-        private val loader: LocationLoader = LocationLoader.getDefault(context)
+        private val loader: LocationLoader
 ) : LocationEngine {
     override val delegate: LocationEngine by lazy(LazyThreadSafetyMode.NONE) {
         object : LifecycleLocationDelegate(context) {

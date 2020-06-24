@@ -15,7 +15,7 @@ import kotlin.concurrent.withLock
 
 class LastLocationEngine(
     private val context: Context,
-    private val loader: LocationLoader = LocationLoader.getDefault(context)
+    private val loader: LocationLoader
 ) : LocationEngine {
     companion object {
         const val TIME_TO_UPDATE = 5000L

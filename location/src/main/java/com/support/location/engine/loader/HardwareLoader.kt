@@ -9,7 +9,6 @@ import android.os.Bundle
 import com.support.location.engine.LocationOptions
 import com.support.location.engine.OnLocationUpdateListener
 import com.support.location.isGPSEnabled
-import com.support.location.location
 
 abstract class HardwareLoader(
         context: Context,
@@ -27,10 +26,13 @@ abstract class HardwareLoader(
 
     @SuppressLint("MissingPermission")
     override fun loadLastLocation(listener: OnLocationUpdateListener) {
+        if (canReuseLastLocation(listener)) return
+
         if (!mLocationManager.isProviderEnabled(provider)) {
             doNextIfNeeded(listener)
             return
         }
+
         val location = mLocationManager.getLastKnownLocation(provider)
 
         if (location != null) {
@@ -41,8 +43,8 @@ abstract class HardwareLoader(
         if (mLastLocationCallback == null) mLastLocationCallback = object : ILocationListener {
             override fun onLocationChanged(location: Location?) {
                 mLocationManager.removeUpdates(mLastLocationCallback!!)
-                if (location == null) next?.loadLastLocation(listener)
-                else listener.onLocationUpdated(location)
+                if (location == null) nextLoadLast(listener)
+                else notifyLocationUpdated(location, listener)
             }
         }
 
@@ -52,9 +54,7 @@ abstract class HardwareLoader(
 
     private fun doNextIfNeeded(listener: OnLocationUpdateListener) {
         if (!context.isGPSEnabled) {
-            if (next == null) {
-                listener.onLocationUpdated(options.default.location)
-            } else next.loadLastLocation(listener)
+            nextLoadLast(listener)
         }
     }
 
@@ -66,13 +66,13 @@ abstract class HardwareLoader(
     override fun requestCallback(listener: OnLocationUpdateListener) {
         if (mCallbacks.containsKey(listener)) return
         if (!mLocationManager.isProviderEnabled(provider)) {
-            requestNext(listener)
+            nextRequest(listener)
             return
         }
         val callback = object : ILocationListener {
             override fun onLocationChanged(location: Location?) {
-                if (location == null) requestNext(listener)
-                else listener.onLocationUpdated(location)
+                if (location == null) nextRequest(listener)
+                else notifyLocationUpdated(location, listener)
             }
         }
         mCallbacks[listener] = callback

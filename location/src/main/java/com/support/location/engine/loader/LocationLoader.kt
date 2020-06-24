@@ -1,21 +1,27 @@
 package com.support.location.engine.loader
 
 import android.content.Context
+import android.location.Location
 import com.support.location.engine.LocationOptions
 import com.support.location.engine.OnLocationUpdateListener
 import com.support.location.isGPSEnabled
 import com.support.location.location
 
 abstract class LocationLoader(
-    val context: Context,
-    val next: LocationLoader?,
-    val options: LocationOptions
+        val context: Context,
+        val next: LocationLoader?,
+        val options: LocationOptions
 ) {
+
     companion object {
         fun getDefault(context: Context, options: LocationOptions = LocationOptions.DEFAULT): LocationLoader {
             return FusedLoader(context, NetworkLoader(context, GPSLoader(context, options = options), options), options)
         }
+
+        private const val TIMEOUT = 1000L
     }
+
+    private var mLastLocation: Pair<Location, Long>? = null
 
     fun notifyDefaultIfGPSNotAvailable(listener: OnLocationUpdateListener): Boolean {
         if (!context.isGPSEnabled) {
@@ -27,7 +33,29 @@ abstract class LocationLoader(
         return false
     }
 
-    fun requestNext(listener: OnLocationUpdateListener) {
+
+    protected fun nextLoadLast(listener: OnLocationUpdateListener) {
+        if (next == null) listener.onLocationUpdated(options.default.location)
+        else next.loadLastLocation(listener)
+    }
+
+    protected fun canReuseLastLocation(listener: OnLocationUpdateListener): Boolean {
+        if (mLastLocation != null) {
+            val last = mLastLocation!!
+            if (System.currentTimeMillis() - last.second <= TIMEOUT) {
+                listener.onLocationUpdated(last.first)
+                return true
+            }
+        }
+        return false
+    }
+
+    protected fun notifyLocationUpdated(location: Location, listener: OnLocationUpdateListener) {
+        mLastLocation = location to System.currentTimeMillis()
+        listener.onLocationUpdated(location)
+    }
+
+    fun nextRequest(listener: OnLocationUpdateListener) {
         removeCallback(listener)
         next?.requestUpdate(listener)
     }

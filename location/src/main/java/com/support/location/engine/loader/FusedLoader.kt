@@ -1,5 +1,6 @@
 package com.support.location.engine.loader
 
+import android.annotation.SuppressLint
 import android.content.Context
 import com.google.android.gms.location.LocationCallback
 import com.google.android.gms.location.LocationRequest
@@ -7,14 +8,13 @@ import com.google.android.gms.location.LocationResult
 import com.google.android.gms.location.LocationServices
 import com.support.location.engine.LocationOptions
 import com.support.location.engine.OnLocationUpdateListener
-import com.support.location.isGPSEnabled
-import com.support.location.location
 
 class FusedLoader(
-    context: Context,
-    next: LocationLoader? = null,
-    options: LocationOptions = LocationOptions.DEFAULT
+        context: Context,
+        next: LocationLoader? = null,
+        options: LocationOptions = LocationOptions.DEFAULT
 ) : LocationLoader(context, next, options) {
+
     private val mCallbacks = hashMapOf<OnLocationUpdateListener, LocationCallback>()
     private val mFusedLocationClient = LocationServices.getFusedLocationProviderClient(context)
 
@@ -25,31 +25,26 @@ class FusedLoader(
         it.smallestDisplacement = options.minDistance
     }
 
+    @SuppressLint("MissingPermission")
     override fun loadLastLocation(listener: OnLocationUpdateListener) {
+        if (canReuseLastLocation(listener)) return
 
-        if (!context.isGPSEnabled) {
-            if (next == null) {
-                listener.onLocationUpdated(options.default.location)
-                return
-            }
-            mFusedLocationClient.lastLocation.addOnSuccessListener {
-                if (it != null) listener.onLocationUpdated(it)
-                else next.loadLastLocation(listener)
-            }.addOnCanceledListener {
-                next.loadLastLocation(listener)
-            }.addOnFailureListener {
-                next.loadLastLocation(listener)
-            }
-            return
+        mFusedLocationClient.lastLocation.addOnSuccessListener {
+            if (it != null) listener.onLocationUpdated(it)
+            else nextLoadLast(listener)
+        }.addOnCanceledListener {
+            next?.loadLastLocation(listener)
+        }.addOnFailureListener {
+            next?.loadLastLocation(listener)
         }
 
         mFusedLocationClient.requestLocationUpdates(mLocationRequest, object : LocationCallback() {
             override fun onLocationResult(p0: LocationResult?) {
                 mFusedLocationClient.removeLocationUpdates(this)
                 when {
-                    p0 == null -> next?.loadLastLocation(listener)
-                    p0.locations.isEmpty() -> listener.onLocationUpdated(p0.lastLocation)
-                    else -> listener.onLocationUpdated(p0.locations.first())
+                    p0 == null -> nextLoadLast(listener)
+                    p0.locations.isEmpty() -> notifyLocationUpdated(p0.lastLocation, listener)
+                    else -> notifyLocationUpdated(p0.locations.first(), listener)
                 }
             }
         }, null).addOnCanceledListener {
@@ -59,6 +54,7 @@ class FusedLoader(
         }
     }
 
+    @SuppressLint("MissingPermission")
     override fun getLastLocation(function: OnLocationUpdateListener) {
         mFusedLocationClient.lastLocation.addOnSuccessListener {
             if (it != null) function.onLocationUpdated(it)
@@ -72,14 +68,15 @@ class FusedLoader(
         return mCallbacks.containsKey(listener)
     }
 
+    @SuppressLint("MissingPermission")
     override fun requestCallback(listener: OnLocationUpdateListener) {
         if (mCallbacks.containsKey(listener)) return
         val callback = object : LocationCallback() {
             override fun onLocationResult(p0: LocationResult?) {
                 when {
-                    p0 == null -> requestNext(listener)
-                    p0.locations.isEmpty() -> listener.onLocationUpdated(p0.lastLocation)
-                    else -> listener.onLocationUpdated(p0.locations.first())
+                    p0 == null -> nextRequest(listener)
+                    p0.locations.isEmpty() -> notifyLocationUpdated(p0.lastLocation, listener)
+                    else -> notifyLocationUpdated(p0.locations.first(), listener)
                 }
             }
         }
