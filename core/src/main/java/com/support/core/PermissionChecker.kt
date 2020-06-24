@@ -27,6 +27,13 @@ open class PermissionChecker(private val activity: BaseActivity) {
         check(*permissions) { if (it) onAccess() }
     }
 
+    fun forceAccess(vararg permissions: String, onPermission: () -> Unit) {
+        check(*permissions) {
+            if (!it) forceAccess(*permissions, onPermission = onPermission)
+            else onPermission()
+        }
+    }
+
     fun check(vararg permissions: String, onPermission: (Boolean) -> Unit) {
         if (permissions.isEmpty()) throw RuntimeException("No permission to check")
 
