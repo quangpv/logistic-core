@@ -31,13 +31,16 @@ class FusedLoader(
 
         mFusedLocationClient.lastLocation.addOnSuccessListener {
             if (it != null) listener.onLocationUpdated(it)
-            else nextLoadLast(listener)
+            else doRequestLoadLast(listener)
         }.addOnCanceledListener {
-            next?.loadLastLocation(listener)
+            nextLoadLast(listener)
         }.addOnFailureListener {
-            next?.loadLastLocation(listener)
+            nextLoadLast(listener)
         }
+    }
 
+    @SuppressLint("MissingPermission")
+    private fun doRequestLoadLast(listener: OnLocationUpdateListener) {
         mFusedLocationClient.requestLocationUpdates(mLocationRequest, object : LocationCallback() {
             override fun onLocationResult(p0: LocationResult?) {
                 mFusedLocationClient.removeLocationUpdates(this)
@@ -48,9 +51,9 @@ class FusedLoader(
                 }
             }
         }, null).addOnCanceledListener {
-            next?.loadLastLocation(listener)
+            nextLoadLast(listener)
         }.addOnFailureListener {
-            next?.loadLastLocation(listener)
+            nextLoadLast(listener)
         }
     }
 
