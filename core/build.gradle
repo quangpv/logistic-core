@@ -52,3 +52,6 @@ dependencies {
     androidTestImplementation "androidx.test.ext:junit:${versions.junitext}"
     androidTestImplementation "androidx.test.espresso:espresso-core:${versions.espresso}"
 }
+repositories {
+    mavenCentral()
+}
