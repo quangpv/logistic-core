@@ -4,7 +4,7 @@ apply plugin: 'kotlin-android-extensions'
 apply from: 'versions.gradle'
 
 apply plugin: 'com.github.dcendents.android-maven'
-group='com.logistic.core'
+group='com.github.quangpv'
 
 android {
     compileSdkVersion 29
